@@ -1,0 +1,102 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_edulog/index
+
+
+    Example context (json):
+    {
+    
+    }
+}}
+<style>
+    .edulog-header-wrapper {
+        max-width: 100%;
+        padding: 0;
+        margin-bottom: 1rem;
+    }
+
+    .edulog-header-inner {
+        margin: 0 auto;
+        padding: 0 1rem;
+        max-width: 95%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    @media (min-width: 768px) {
+        .edulog-header-inner {
+            max-width: 90%;
+        }
+    }
+
+    @media (min-width: 1200px) {
+        .edulog-header-inner {
+            max-width: 80%;
+        }
+    }
+</style>
+
+<div class="edulog-wrapper">
+    <div class="edulog-inner">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Analysis History</h2>
+            <div class="text-end">
+                <h2>Welcome</h2>
+                <h5><strong>{{username}}</strong></h5>
+            </div>
+        </div>
+
+        <table class="table table-bordered align-middle text-center">
+            <thead class="table-light">
+                <tr>
+                    <th>Date ⬍</th>
+                    <th>Course</th>
+                    <th>CPL</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#records}}
+                    <tr>
+                        <td>{{timecreated}}</td>
+                        <td>{{fullname}}</td>
+                        <td>{{cpmk_name}}</td>
+                        <td>
+                            <a href="{{info_url}}" class="me-2 text-primary" title="Details">
+                                <i class="icon fa fa-info-circle fa-lg"></i>
+                            </a>
+                            <a href="{{delete_url}}" class="text-danger" title="Delete">
+                                <i class="icon fa fa-trash fa-lg"></i>
+                            </a>
+                        </td>
+                    </tr>
+                {{/records}}
+            </tbody>
+        </table>
+        <div class="mt-4 text-center">
+          {{{pagination}}}
+        </div>
+
+        <div class="text-end mt-3">
+            <a href="wizard.php" class="btn btn-primary">
+                <i class="fa fa-plus"></i> New Analysis
+            </a>
+        </div>
+    </div>
+</div>
