@@ -23,29 +23,77 @@
     
     }
 }}
-  <div class="container">
-    <h3>Result for: {{cpmk_name}}</h3>
-    <table class="table table-bordered mt-4 text-center align-middle">
-        <thead class="table-light">
-            <tr>
-                <th>Student ID</th>
-                <th>Student Name</th>
-                <th>Total Visits</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{#records}}
-            <tr>
-                <td>{{id}}</td>
-                <td>{{name}}</td>
-                <td>{{visits}}</td>
-            </tr>
-            {{/records}}
-            {{^records}}
-            <tr>
-                <td colspan="3">No data found for this CPMK.</td>
-            </tr>
-            {{/records}}
-        </tbody>
-    </table>
+<style>
+.edulog-wrapper {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.edulog-header .back-button {
+  text-decoration: none;
+  font-size: 20px;
+  color: #000;
+}
+
+.edulog-course-title h2 {
+  margin-bottom: 0;
+}
+
+.edulog-course-title h5 {
+  margin-top: 4px;
+  color: #555;
+}
+
+.table td, .table th {
+  vertical-align: middle !important;
+}
+
+a {
+  text-decoration: underline;
+}
+
+</style>
+
+  <div class="edulog-wrapper">
+  <div class="edulog-header d-flex justify-content-between align-items-center mb-3">
+    <a href="index.php" class="back-button">&larr;</a>
+    <select class="form-select w-auto">
+      <option selected>Most Visits</option>
+      <!-- Future: Add other sort/filter options -->
+    </select>
+  </div>
+
+  <div class="edulog-course-title">
+    <h2 class="fw-bold">Course</h2>
+    <h5 class="text-muted">{{course_fullname}} - {{cpmk_name}}</h5>
+  </div>
+
+  <h5 class="mt-4 mb-3 fw-semibold border-top pt-3">Modules Visited Attempt per Student</h5>
+
+  <table class="table table-bordered text-center align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Name</th>
+        <th>CPL</th>
+        <th>Modules Visited</th>
+        <th>CPMK Grade</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#records}}
+      <tr>
+        <td><a href="{{{profileurl}}}">{{name}}</a></td>
+        <td>{{cpmk_name}}</td>
+        <td>{{visits}} Times</td>
+        <td>{{grade}}</td>
+      </tr>
+      {{/records}}
+      {{^records}}
+      <tr>
+        <td colspan="4">No data found for this CPMK.</td>
+      </tr>
+      {{/records}}
+    </tbody>
+  </table>
 </div>

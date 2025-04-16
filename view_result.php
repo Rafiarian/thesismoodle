@@ -23,6 +23,7 @@ $records = utils::get_student_data($cpmkid);
 
 // Prepare data for Mustache
 $templatecontext = [
+    'course_fullname' => $records ? reset($records)->course_fullname : '',
     'cpmk_name' => $records ? reset($records)->cpmk_name : '',
     'records' => array_values($records),
 ];
