@@ -98,11 +98,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $timecreated = time();
             $assignweights = $summary['assignweights'];
             $quizweights   = $summary['quizweights'];
-
-               // ✅ DEBUG LOGGING
-            error_log('Assignment Weights: ' . print_r($assignweights, true));
-            error_log('Quiz Weights: ' . print_r($quizweights, true));
-            error_log('CPMK Name: ' . $cpmkname);
             
            // Step 1: Insert main record
             $mainrecord = (object)[

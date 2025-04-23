@@ -52,22 +52,25 @@
 a {
   text-decoration: underline;
 }
-
 </style>
 
-  <div class="edulog-wrapper">
-  <div class="edulog-header d-flex justify-content-between align-items-center mb-3">
-    <a href="index.php" class="back-button">&larr;</a>
-    <select class="form-select w-auto">
-      <option selected>Most Visits</option>
-      <!-- Future: Add other sort/filter options -->
-    </select>
+<div class="edulog-wrapper container mt-2">
+  <div class="edulog-header d-flex justify-content-between align-items-center mb-2">
+    <div class="d-flex align-items-center">
+      <a href="index.php" class="btn me-3">&larr;</a>
+      <select id="sortSelect" class="form-select form-select-sm flex-grow-1" onchange="onSortChange(this)">
+        <option value="most" {{#is_most}}selected{{/is_most}}>Most Visits</option>
+        <option value="least" {{#is_least}}selected{{/is_least}}>Least Visits</option>
+        <option value="none" {{#is_none}}selected{{/is_none}}>Not Accessing Modules</option>
+        <option value="time" {{#is_time}}selected{{/is_time}}>Modules Accessing Time</option>
+      </select>
+    </div>
+    <div class="text-end">
+      <h3 class="fw-bold mb-0"><strong>Course</strong></h3>
+      <h5 class="text-muted">{{course_fullname}} - {{cpmk_name}}</h5>
+    </div>
   </div>
-
-  <div class="edulog-course-title">
-    <h2 class="fw-bold">Course</h2>
-    <h5 class="text-muted">{{course_fullname}} - {{cpmk_name}}</h5>
-  </div>
+</div>
 
   <h5 class="mt-4 mb-3 fw-semibold border-top pt-3">Modules Visited Attempt per Student</h5>
 
@@ -86,7 +89,7 @@ a {
         <td><a href="{{{profileurl}}}">{{name}}</a></td>
         <td>{{cpmk_name}}</td>
         <td>{{visits}} Times</td>
-        <td>{{grade}}</td>
+        <td>{{#final_score}}{{final_score}}{{/final_score}}{{^final_score}}—{{/final_score}}</td>
       </tr>
       {{/records}}
       {{^records}}
@@ -97,3 +100,12 @@ a {
     </tbody>
   </table>
 </div>
+
+<script>
+function onSortChange(select) {
+  const selectedValue = select.value;
+  const params = new URLSearchParams(window.location.search);
+  params.set('sort', selectedValue);
+  window.location.href = window.location.pathname + '?' + params.toString();
+}
+</script>

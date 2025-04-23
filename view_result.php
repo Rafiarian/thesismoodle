@@ -18,8 +18,42 @@ global $PAGE, $OUTPUT;
 // Get the CPMK ID from URL
 $cpmkid = required_param('id', PARAM_INT);
 
-// Fetch data using the utility function
-$records = utils::get_student_data($cpmkid);
+$sort = optional_param('sort', 'most', PARAM_ALPHA);
+
+$template = 'local_edulog/cpmk_result_1';
+
+switch ($sort) {
+    case 'most':
+        $records = utils::get_most_visited_with_score($cpmkid);
+        $template = 'local_edulog/cpmk_result_1';
+        $templatecontext['is_most'] = true;
+        break;
+    case 'least':
+        $records = utils::get_most_visited_with_score($cpmkid);
+        $template = 'local_edulog/cpmk_result_1';
+        $templatecontext['is_least'] = true;
+        break;
+    case 'notaccess':
+        $records = utils::get_students_not_accessing($cpmkid);
+        $template = 'local_edulog/cpmk_result_notaccess';
+        $templatecontext['is_none'] = true;
+        break;
+    case 'time':
+        $records = utils::get_access_time_data($cpmkid);
+        $template = 'local_edulog/cpmk_result_time';
+        $templatecontext['is_time'] = true;
+        break;
+    default:
+        $records = utils::get_most_visited_with_score($cpmkid);
+        $template = 'local_edulog/cpmk_result_1';
+        $templatecontext['is_most'] = true;
+        break;
+}
+error_log(print_r($records, true));
+error_log(print_r($templatecontext, true));
+
+//// Fetch data using the utility function
+// $records = utils::get_student_data($cpmkid);
 
 // Prepare data for Mustache
 $templatecontext = [
@@ -35,5 +69,5 @@ $PAGE->set_title('CPMK Result');
 $PAGE->set_heading('CPMK Result');
 
 echo $OUTPUT->header();
-echo $OUTPUT->render_from_template('local_edulog/cpmk_result_1', $templatecontext);
+echo $OUTPUT->render_from_template($template, $templatecontext);
 echo $OUTPUT->footer();
