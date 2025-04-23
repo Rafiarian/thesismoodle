@@ -48,6 +48,67 @@
  
          return $DB->get_records_sql($sql, ['cpmkid' => $cpmkid]);
      }
+     
+     public static function get_least_visited($cpmkid) {
+        global $DB;
+
+        $sql = "SELECT 
+                   u.id, 
+                   CONCAT(u.firstname, ' ', u.lastname) AS name, 
+                   c.cpmk_name, 
+                   COUNT(l.id) AS visits,
+                   d.fullname AS course_fullname
+               FROM {local_cpmk} c
+               JOIN {local_cpmk_to_modules} m 
+                   ON m.cpmkid = c.id
+               JOIN {course} d
+                   ON d.id = c.courseid
+               JOIN {logstore_standard_log} l 
+                   ON l.contextinstanceid = m.coursemoduleid 
+                   AND l.target = 'course_module'
+                   AND l.courseid = c.courseid
+               JOIN {user} u 
+                   ON u.id = l.userid
+               WHERE c.id = :cpmkid
+               AND l.timecreated <= (
+                   SELECT MAX(q.timeclose)
+                   FROM {local_cpmk_to_quiz} cq
+                   JOIN {quiz} q ON q.id = cq.quizid
+                   WHERE cq.cpmkid = c.id
+               )
+               GROUP BY u.id, name, c.cpmk_name, d.fullname
+               ORDER BY visits ASC";    
+
+        return $DB->get_records_sql($sql, ['cpmkid' => $cpmkid]);
+    }
+
+    public static function get_students_not_accessing($cpmkid) {
+        global $DB;
+    
+        $sql = "SELECT 
+                    u.id,
+                    CONCAT(u.firstname, ' ', u.lastname) AS name,
+                    c.cpmk_name,
+                    d.fullname AS course_fullname,
+                    0 AS visits
+                FROM {local_cpmk} c
+                JOIN {local_cpmk_to_modules} m ON m.cpmkid = c.id
+                JOIN mdl_course d ON d.id = c.courseid
+                JOIN mdl_user_enrolments ue ON ue.enrolid IN (
+                    SELECT e.id FROM mdl_enrol e WHERE e.courseid = d.id
+                )
+                JOIN mdl_user u ON u.id = ue.userid
+                LEFT JOIN {logstore_standard_log} l 
+                    ON l.contextinstanceid = m.coursemoduleid 
+                    AND l.target = 'course_module'
+                    AND l.courseid = c.courseid
+                    AND l.userid = u.id
+                WHERE c.id = :cpmkid
+                GROUP BY u.id, name, c.cpmk_name, d.fullname
+                HAVING COUNT(l.id) = 0";
+    
+        return $DB->get_records_sql($sql, ['cpmkid' => $cpmkid]);
+    }
    
      public static function get_summatif_data($cpmkid) {
         global $DB;
@@ -179,32 +240,53 @@
 
         return $visits;
     }
-    
-    public static function get_students_not_accessing($cpmkid) {
-        global $DB;
 
-        $sql = "SELECT 
-                    u.id, 
-                    CONCAT(u.firstname, ' ', u.lastname) AS name, 
-                    c.cpmk_name, 
-                    COUNT(l.id) AS visits,
-                    d.fullname AS course_fullname
-                FROM {local_cpmk} c
-                JOIN {local_cpmk_to_modules} m 
-                   ON m.cpmkid = c.id
-                JOIN mdl_course d
-                   ON d.id = c.courseid
-                JOIN {logstore_standard_log} l 
-                    ON l.contextinstanceid = m.coursemoduleid 
-                    AND l.target = 'course_module'
-                    AND l.courseid = c.courseid
-                JOIN {user} u 
-                    ON u.id = l.userid
-                WHERE c.id = :cpmkid
-                GROUP BY u.id, name, c.cpmk_name, d.fullname";
+    public static function get_least_visited_with_score($cpmkid) {
+        $visits = self::get_least_visited($cpmkid);
+        $grades_raw = self::get_summatif_data($cpmkid);
+        $final_scored = self::calculate_final_grades($grades_raw);
 
-        return $DB->get_records_sql($sql, ['cpmkid' => $cpmkid]);
+        // Step 1: Index final scores by userid
+        $scored_indexed = [];
+        foreach ($final_scored as $entry) {
+            $scored_indexed[$entry['userid']] = $entry['final_score'];
+        }
+
+        // Step 2: Match and update visits
+        foreach ($visits as $id => $v) {
+            if (isset($scored_indexed[$v->id])) {
+                $visits[$id]->final_score = $scored_indexed[$v->id];
+            } else {
+                $visits[$id]->final_score = 0;
+            }
+        }
+
+        return $visits;
     }
+
+    public static function get_zero_visited_with_score($cpmkid) {
+        $visits = self::get_students_not_accessing($cpmkid);
+        $grades_raw = self::get_summatif_data($cpmkid);
+        $final_scored = self::calculate_final_grades($grades_raw);
+
+        // Step 1: Index final scores by userid
+        $scored_indexed = [];
+        foreach ($final_scored as $entry) {
+            $scored_indexed[$entry['userid']] = $entry['final_score'];
+        }
+
+        // Step 2: Match and update visits
+        foreach ($visits as $id => $v) {
+            if (isset($scored_indexed[$v->id])) {
+                $visits[$id]->final_score = $scored_indexed[$v->id];
+            } else {
+                $visits[$id]->final_score = 0;
+            }
+        }
+
+        return $visits;
+    }
+    
     public static function get_access_time_data($cpmkid) {
         global $DB;
 

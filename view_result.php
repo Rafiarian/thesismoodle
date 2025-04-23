@@ -26,40 +26,37 @@ switch ($sort) {
     case 'most':
         $records = utils::get_most_visited_with_score($cpmkid);
         $template = 'local_edulog/cpmk_result_1';
-        $templatecontext['is_most'] = true;
         break;
     case 'least':
-        $records = utils::get_most_visited_with_score($cpmkid);
-        $template = 'local_edulog/cpmk_result_1';
-        $templatecontext['is_least'] = true;
+        $records = utils::get_least_visited_with_score($cpmkid);
+        $template = 'local_edulog/cpmk_result_2';
         break;
     case 'notaccess':
-        $records = utils::get_students_not_accessing($cpmkid);
+        $records = utils::get_zero_visited_with_score($cpmkid);
         $template = 'local_edulog/cpmk_result_notaccess';
-        $templatecontext['is_none'] = true;
         break;
     case 'time':
         $records = utils::get_access_time_data($cpmkid);
         $template = 'local_edulog/cpmk_result_time';
-        $templatecontext['is_time'] = true;
         break;
     default:
         $records = utils::get_most_visited_with_score($cpmkid);
         $template = 'local_edulog/cpmk_result_1';
-        $templatecontext['is_most'] = true;
         break;
 }
-error_log(print_r($records, true));
-error_log(print_r($templatecontext, true));
 
-//// Fetch data using the utility function
-// $records = utils::get_student_data($cpmkid);
+
+
 
 // Prepare data for Mustache
 $templatecontext = [
     'course_fullname' => $records ? reset($records)->course_fullname : '',
     'cpmk_name' => $records ? reset($records)->cpmk_name : '',
     'records' => array_values($records),
+    'is_most' => $sort === 'most',
+    'is_least' => $sort === 'least',
+    'is_none' => $sort === 'notaccess',
+    'is_time' => $sort === 'time',
 ];
 
 // Setup Moodle page
