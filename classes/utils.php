@@ -16,10 +16,10 @@
  defined('MOODLE_INTERNAL') || die();
  
  class utils {
-     public static function get_most_visited($cpmkid) {
-         global $DB;
- 
-         $sql = "SELECT 
+    public static function get_most_visited($cpmkid) {
+        global $DB;
+    
+        $sql = "SELECT 
                     u.id, 
                     CONCAT(u.firstname, ' ', u.lastname) AS name, 
                     c.cpmk_name, 
@@ -30,54 +30,64 @@
                     ON m.cpmkid = c.id
                 JOIN {course} d
                     ON d.id = c.courseid
-                JOIN {logstore_standard_log} l 
-                    ON l.contextinstanceid = m.coursemoduleid 
+                JOIN {user_enrolments} ue 
+                    ON ue.enrolid IN (
+                        SELECT e.id FROM {enrol} e WHERE e.courseid = d.id
+                    )
+                JOIN {user} u 
+                    ON u.id = ue.userid
+                LEFT JOIN {logstore_standard_log} l 
+                    ON l.userid = u.id
+                    AND l.contextinstanceid = m.coursemoduleid 
                     AND l.target = 'course_module'
                     AND l.courseid = c.courseid
-                JOIN {user} u 
-                    ON u.id = l.userid
+                    AND l.timecreated <= (
+                        SELECT MAX(q.timeclose)
+                        FROM {local_cpmk_to_quiz} cq
+                        JOIN {quiz} q ON q.id = cq.quizid
+                        WHERE cq.cpmkid = c.id
+                    )
                 WHERE c.id = :cpmkid
-                AND l.timecreated <= (
-                    SELECT MAX(q.timeclose)
-                    FROM {local_cpmk_to_quiz} cq
-                    JOIN {quiz} q ON q.id = cq.quizid
-                    WHERE cq.cpmkid = c.id
-                )
                 GROUP BY u.id, name, c.cpmk_name, d.fullname
-            ";    
- 
-         return $DB->get_records_sql($sql, ['cpmkid' => $cpmkid]);
-     }
+                ORDER BY visits DESC";
+    
+        return $DB->get_records_sql($sql, ['cpmkid' => $cpmkid]);
+    }
      
      public static function get_least_visited($cpmkid) {
         global $DB;
 
         $sql = "SELECT 
-                   u.id, 
-                   CONCAT(u.firstname, ' ', u.lastname) AS name, 
-                   c.cpmk_name, 
-                   COUNT(l.id) AS visits,
-                   d.fullname AS course_fullname
-               FROM {local_cpmk} c
-               JOIN {local_cpmk_to_modules} m 
-                   ON m.cpmkid = c.id
-               JOIN {course} d
-                   ON d.id = c.courseid
-               JOIN {logstore_standard_log} l 
-                   ON l.contextinstanceid = m.coursemoduleid 
-                   AND l.target = 'course_module'
-                   AND l.courseid = c.courseid
-               JOIN {user} u 
-                   ON u.id = l.userid
-               WHERE c.id = :cpmkid
-               AND l.timecreated <= (
-                   SELECT MAX(q.timeclose)
-                   FROM {local_cpmk_to_quiz} cq
-                   JOIN {quiz} q ON q.id = cq.quizid
-                   WHERE cq.cpmkid = c.id
-               )
-               GROUP BY u.id, name, c.cpmk_name, d.fullname
-               ORDER BY visits ASC";    
+                    u.id, 
+                    CONCAT(u.firstname, ' ', u.lastname) AS name, 
+                    c.cpmk_name, 
+                    COUNT(l.id) AS visits,
+                    d.fullname AS course_fullname
+                FROM {local_cpmk} c
+                JOIN {local_cpmk_to_modules} m 
+                    ON m.cpmkid = c.id
+                JOIN {course} d
+                    ON d.id = c.courseid
+                JOIN {user_enrolments} ue 
+                    ON ue.enrolid IN (
+                        SELECT e.id FROM {enrol} e WHERE e.courseid = d.id
+                    )
+                JOIN {user} u 
+                    ON u.id = ue.userid
+                LEFT JOIN {logstore_standard_log} l 
+                    ON l.userid = u.id
+                    AND l.contextinstanceid = m.coursemoduleid 
+                    AND l.target = 'course_module'
+                    AND l.courseid = c.courseid
+                    AND l.timecreated <= (
+                        SELECT MAX(q.timeclose)
+                        FROM {local_cpmk_to_quiz} cq
+                        JOIN {quiz} q ON q.id = cq.quizid
+                        WHERE cq.cpmkid = c.id
+                    )
+                WHERE c.id = :cpmkid
+                GROUP BY u.id, name, c.cpmk_name, d.fullname
+                ORDER BY visits ASC";    
 
         return $DB->get_records_sql($sql, ['cpmkid' => $cpmkid]);
     }
@@ -109,7 +119,125 @@
     
         return $DB->get_records_sql($sql, ['cpmkid' => $cpmkid]);
     }
-   
+
+    public static function get_access_time_data($cpmkid) {
+        global $DB;
+    
+        // Step 1: Fetch the latest quiz deadline
+        $quiz_deadline_sql = "SELECT 
+                                  MAX(q.timeclose) AS latest_deadline
+                              FROM {local_cpmk_to_quiz} cq
+                              JOIN {quiz} q ON q.id = cq.quizid
+                              WHERE cq.cpmkid = :cpmkid";
+    
+        $latest_deadline_timestamp = $DB->get_field_sql($quiz_deadline_sql, ['cpmkid' => $cpmkid]);
+    
+        if (!$latest_deadline_timestamp) {
+            // No quiz deadline found, return empty
+            return [
+                'records' => [],
+                'labels' => json_encode([]),   
+                'counts' => json_encode([]),
+            ];
+        }
+    
+        $latest_deadline_date = date('Y-m-d', $latest_deadline_timestamp);
+        $start_date = date('Y-m-d', strtotime('-45 days', $latest_deadline_timestamp));
+    
+        // Step 2: Fetch access counts between start_date and latest_deadline
+        $sql = "SELECT 
+                    DATE(FROM_UNIXTIME(l.timecreated)) AS access_date,
+                    COUNT(l.id) AS access_count
+                FROM {logstore_standard_log} l
+                JOIN {local_cpmk_to_modules} m ON m.coursemoduleid = l.contextinstanceid
+                WHERE m.cpmkid = :cpmkid
+                  AND l.target = 'course_module'
+                  AND l.timecreated BETWEEN UNIX_TIMESTAMP(:start_date) AND UNIX_TIMESTAMP(:end_date)
+                GROUP BY access_date
+                ORDER BY access_date ASC";
+    
+        $access_data = $DB->get_records_sql($sql, [
+            'cpmkid' => $cpmkid,
+            'start_date' => $start_date . ' 00:00:00',
+            'end_date' => $latest_deadline_date . ' 23:59:59',
+        ]);
+    
+        // Step 3: Map access_data into key-value [access_date => count]
+        $access_map = [];
+        foreach ($access_data as $data) {
+            $access_map[$data->access_date] = $data->access_count;
+        }
+    
+        // Step 4: Fill the full date range
+        $records = [];
+
+    
+        $current = strtotime($start_date);
+        $end = strtotime($latest_deadline_date);
+    
+        while ($current <= $end) {
+            $date = date('Y-m-d', $current);
+            $count = isset($access_map[$date]) ? $access_map[$date] : 0;
+    
+            $records[] = (object)[
+                'labels' => json_encode($records['labels']),
+                'counts' => json_encode($records['counts']),
+            ];
+
+            $labels[] = $date;
+            $counts[] = $count;
+            $current = strtotime('+1 day', $current);
+        }
+    
+        // Step 5: Return for Mustache and Chart
+        return [
+            'records' => $records,
+            'labels' => $labels,
+            'counts' => $counts,
+        ];
+    }
+
+    public static function get_quiz_deadline($cpmkid) {
+        global $DB;
+    
+        // Fetch the quiz deadline for the CPMK and the quiz name
+        $sql = "SELECT 
+                    DATE(FROM_UNIXTIME(q.timeclose)) AS quiz_deadline,
+                    q.name AS quiz_name
+                FROM mdl_local_cpmk_to_quiz cq
+                JOIN mdl_quiz q ON q.id = cq.quizid
+                WHERE cq.cpmkid = :cpmkid
+                ORDER BY q.timeclose";
+    
+        $quiz_deadline_data = $DB->get_records_sql($sql, ['cpmkid' => $cpmkid]);
+    
+        // Initialize arrays to store results
+        $quiz_deadline = [];
+        $quiz_name = [];
+    
+        foreach ($quiz_deadline_data as $data) {
+            $quiz_deadline[] = $data->quiz_deadline; 
+            $quiz_name[] = $data->quiz_name;
+        }
+
+        // Flatten: Only take the first quiz (you can adjust if needed)
+        $deadline = [];
+        for ($i = 0; $i < count($quiz_deadline); $i++) {
+            $deadline[] = [
+                'quiz_deadline' => $quiz_deadline[$i],
+                'quiz_name' => $quiz_name[$i],
+            ];
+        }
+    
+        // // Flatten: Only take the first quiz (you can adjust if needed)
+        // $quiz_deadline_value = isset($quiz_deadline[0]) ? $quiz_deadline[0] : null;
+        // $quiz_name_value = isset($quiz_name[0]) ? $quiz_name[0] : null;
+
+        error_log('Deadline Utils' . print_r($deadline, true));
+        // Return neatly
+        return $deadline;
+    }
+    
      public static function get_summatif_data($cpmkid) {
         global $DB;
     
@@ -286,30 +414,4 @@
 
         return $visits;
     }
-    
-    public static function get_access_time_data($cpmkid) {
-        global $DB;
-
-        $sql = "SELECT 
-                    u.id, 
-                    CONCAT(u.firstname, ' ', u.lastname) AS name, 
-                    c.cpmk_name, 
-                    COUNT(l.id) AS visits,
-                    d.fullname AS course_fullname
-                FROM {local_cpmk} c
-                JOIN {local_cpmk_to_modules} m 
-                   ON m.cpmkid = c.id
-                JOIN mdl_course d
-                   ON d.id = c.courseid
-                JOIN {logstore_standard_log} l 
-                    ON l.contextinstanceid = m.coursemoduleid 
-                    AND l.target = 'course_module'
-                    AND l.courseid = c.courseid
-                JOIN {user} u 
-                    ON u.id = l.userid
-                WHERE c.id = :cpmkid
-                GROUP BY u.id, name, c.cpmk_name, d.fullname";
-
-        return $DB->get_records_sql($sql, ['cpmkid' => $cpmkid]);
-    }
- }
+}

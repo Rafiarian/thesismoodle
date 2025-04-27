@@ -36,8 +36,12 @@ switch ($sort) {
         $template = 'local_edulog/cpmk_result_notaccess';
         break;
     case 'time':
-        $records = utils::get_access_time_data($cpmkid);
-        $template = 'local_edulog/cpmk_result_time';
+        $access_data = utils::get_access_time_data($cpmkid);
+        $records = $access_data['records'];
+        $labels = $access_data['labels'];
+        $counts = $access_data['counts'];
+        $deadline = utils::get_quiz_deadline($cpmkid);
+        $template = 'local_edulog/cpmk_result_3';
         break;
     default:
         $records = utils::get_most_visited_with_score($cpmkid);
@@ -46,18 +50,26 @@ switch ($sort) {
 }
 
 
+error_log('Records views' . print_r($records, true));
 
+error_log('label nih!'. print_r($labels, true));
+error_log('COUNT NIH!' . print_r($counts, true));
 
 // Prepare data for Mustache
 $templatecontext = [
     'course_fullname' => $records ? reset($records)->course_fullname : '',
     'cpmk_name' => $records ? reset($records)->cpmk_name : '',
+    'labels' => json_encode($labels), // ⬅ encode ke JSON
+    'counts' => json_encode($counts),
+    'deadline' => isset($deadline) ? $deadline : '',
     'records' => array_values($records),
     'is_most' => $sort === 'most',
     'is_least' => $sort === 'least',
     'is_none' => $sort === 'notaccess',
     'is_time' => $sort === 'time',
 ];
+
+error_log('Template context: ' . print_r($templatecontext, true));
 
 // Setup Moodle page
 $PAGE->set_url(new moodle_url('/local/edulog/view_result.php', ['cpmkid' => $cpmkid]));
