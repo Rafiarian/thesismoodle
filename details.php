@@ -40,7 +40,7 @@ $templatecontext = [
 ];
 
 // Debugging (hapus di production)
-error_log('Template context: ' . print_r($templatecontext, true));
+// error_log('Template context: ' . print_r($templatecontext, true));
 
 // Setup the page
 $PAGE->set_url(new moodle_url('/local/edulog/details.php', ['cpmkid' => $cpmkid, 'userid' => $userid]));

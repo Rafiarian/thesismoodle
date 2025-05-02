@@ -1,5 +1,21 @@
- {{!
-    @template local_edulog/sword
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_edulog/cpmk_content
 
 
     Example context (json):
@@ -7,35 +23,6 @@
     
     }
 }}
-<!-- Header -->
-<style>
-.edulog-wrapper {
-    max-width: 100%;
-    margin: 0 auto;
-    padding: 20px;
-}
-.edulog-header .back-button {
-    text-decoration: none;
-    font-size: 20px;
-    color: #000;
-}
-.edulog-course-title h2 {
-    margin-bottom: 0;
-}
-.edulog-course-title h5 {
-    margin-top: 4px;
-    color: #555;
-}
-.table td, .table th {
-    vertical-align: middle !important;
-}
-a {
-    text-decoration: underline;
-}
-</style>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
 .edulog-wrapper {
   max-width: 100%;
@@ -72,12 +59,12 @@ a {
     <div class="d-flex align-items-center">
       <a href="index.php" class="btn me-3">&larr;</a>
       <select id="sortSelect" class="form-select form-select-sm flex-grow-1" onchange="onSortChange(this)">
-        <option value="sword" {{#is_sword}}{{/is_sword}}>SWORD</option>
         <option value="content" {{#is_content}}{{/is_content}}>CPMK Content</option>
-        <option value="most" {{#is_most}}{{/is_most}}>Most Visits</option>
+        <option value="most" {{#is_most}}selected{{/is_most}}>Most Visits</option>
         <option value="least" {{#is_least}}{{/is_least}}>Least Visits</option>
         <option value="notaccess" {{#is_notaccess}}{{/is_notaccess}}>Not Accessing Modules</option>
         <option value="time" {{#is_time}}{{/is_time}}>Modules Accessing Time</option>
+        <option value="sword" {{#is_sword}}{{/is_sword}}>SWORD</option>
       </select>
     </div>
     <div class="text-end">
@@ -87,20 +74,20 @@ a {
   </div>
 </div>
 
-<h4 class="mt-4 mb-3 fw-semibold border-top pt-3">Modules and Number of Modules Visited by <strong>{{username}}</strong></h4>
-
-<div class="container mt-4">
-  <h3 class="mb-3">SWORD Result for CPMK {{cpmkid}}</h3>
-  <pre style="background-color: #f9f9f9; padding: 1rem; border: 1px solid #ddd;">
-{{#py_output}}
-{{.}}
-{{/py_output}}
-  </pre>
-</div>
-
-<h4 class="mt-5 mb-3">Learning Modules Activity Chart</h4>
-<div class="container mt-2">
-    <canvas id="activityChart"></canvas>
+  <div class="row">
+    <div class="col-md-4">
+      <h5 class="fw-semibold border-bottom">Module</h5>
+      {{#modules}}<p>{{module_name}}</p>{{/modules}}
+    </div>
+    <div class="col-md-4">
+      <h5 class="fw-semibold border-bottom">Assignment</h5>
+      {{#assignments}}<p>{{assign_name}}</p>{{/assignments}}
+    </div>
+    <div class="col-md-4">
+      <h5 class="fw-semibold border-bottom">Quiz</h5>
+      {{#quizzes}}<p>{{quiz_name}}</p>{{/quizzes}}
+    </div>
+  </div>
 </div>
 
 <script>

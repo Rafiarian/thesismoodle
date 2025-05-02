@@ -309,9 +309,6 @@ switch ($step) {
         break;
 
     case 5:
-        echo '<pre>';
-        print_r($_SESSION['wizard']);
-        echo '</pre>';
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty(optional_param('cpmkname', '', PARAM_TEXT))) {
             $_SESSION['wizard']['cpmkname'] = required_param('cpmkname', PARAM_TEXT);
         }    

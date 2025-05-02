@@ -13,17 +13,25 @@ require('../../config.php');
 require_login();
 use local_edulog\utils;
 use local_edulog\utils_sword;
+use local_edulog\utils_content;
 
 global $PAGE, $OUTPUT;
 
 // Get the CPMK ID from URL
 $cpmkid = required_param('id', PARAM_INT);
 
-$sort = optional_param('sort', 'most', PARAM_ALPHA);
+$sort = optional_param('sort', 'content', PARAM_ALPHA);
 
-$template = 'local_edulog/cpmk_result_1';
+$template = 'local_edulog/cpmk_content';
 
 switch ($sort) {
+    case 'content':
+        $cpmk_data = utils::get_course_and_cpmk_name($cpmkid);
+        $modules = utils_content::get_cpmk_modules($cpmkid);
+        $assignments = utils_content::get_cpmk_assignments($cpmkid);
+        $quizzes = utils_content::get_cpmk_quizzes($cpmkid);
+        $template = 'local_edulog/cpmk_content';
+        break;
     case 'most':
         $records = utils::get_most_visited_with_score($cpmkid);
         $template = 'local_edulog/cpmk_result_1';
@@ -50,20 +58,27 @@ switch ($sort) {
         $template = 'local_edulog/cpmk_result_sword';
         break;
     default:
-        $records = utils::get_most_visited_with_score($cpmkid);
-        $template = 'local_edulog/cpmk_result_1';
+            $cpmk_data = utils::get_course_and_cpmk_name($cpmkid);
+            $modules = utils_content::get_cpmk_modules($cpmkid);
+            $assignments = utils_content::get_cpmk_assignments($cpmkid);
+            $quizzes = utils_content::get_cpmk_quizzes($cpmkid);
+            $template = 'local_edulog/cpmk_content';
         break;
 }
+
+    error_log('Cek data content Modules' . print_r($modules, true));
+    error_log('Cek data content Assignment' . print_r($assignments, true));
+    error_log('Cek data content Quizzes' . print_r($quizzes, true));
 
     foreach ($records as &$record) {
         $record->profileurl = new moodle_url('/local/edulog/details.php', [
             'cpmkid' => $record->cpmkid ?? $cpmkid, // fallback kalau belum ada
-            'userid' => $record->userid ?? $record->id // biasanya id user
+            'userid' => $record->userid ?? $record->id // id user
         ]);
     }
     unset($record); 
 
-    // Special handling for 'sword' after switch
+// SWORD HANDLING UNTUK PYTHONNYA While keeping the view_result clean
 if ($sort === 'sword') {
     $tempdir = __DIR__ . '/temp';
     $inputfile = "$tempdir/sword_input_$cpmkid.csv";
@@ -129,23 +144,25 @@ if ($sort === 'sword') {
 
 // Prepare data for Mustache
 $templatecontext = [
+    'view_detail' => new moodle_url('/local/edulog/view_result.php', ['id' => $records->id]),
     'course_fullname' => $records ? reset($records)->course_fullname : '',
     'cpmk_name' => $records ? reset($records)->cpmk_name : '',
-    'view_detail' => new moodle_url('/local/edulog/view_result.php', ['id' => $record->id]),
-    'labels' => json_encode($labels), // ⬅ encode ke JSON
-    'counts' => json_encode($counts),
-    'deadline' => isset($deadline) ? $deadline : '',
     'records' => array_values($records),
-    'course_fullname_graph' => $cpmk_data['course_fullname'] ?? '',
-    'cpmk_name_graph' => $cpmk_data['cpmk_name'] ?? '',
-    'is_most' => $sort === 'most',
+    'labels' => json_encode($labels), //cpmk_graph ⬅ encode ke JSON
+    'counts' => json_encode($counts), //cpmk_graph
+    'course_fullname_graph' => $cpmk_data['course_fullname'] ?? '', //cpmk_graph
+    'cpmk_name_graph' => $cpmk_data['cpmk_name'] ?? '', //cpmk_graph
+    'deadline' => isset($deadline) ? $deadline : '',
+    'modules' => array_values($modules),   //cpmk_content
+    'assignments' => array_values($assignments), //cpmk_content
+    'quizzes' => array_values($quizzes),$quizzes, //cpmk_content
+    'is_most' => $sort === 'most', //sorting function
     'is_least' => $sort === 'least',
     'is_none' => $sort === 'notaccess',
     'is_time' => $sort === 'time',
     'is_sword ' => $sort === 'sword',
+    'is_content' => $sort === 'content',
 ];
-
-error_log('Template context: ' . print_r($templatecontext, true));
 
 // Setup Moodle page
 $PAGE->set_url(new moodle_url('/local/edulog/view_result.php', ['cpmkid' => $cpmkid]));

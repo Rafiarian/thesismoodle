@@ -60,6 +60,7 @@ a {
       <a href="index.php" class="btn me-3">&larr;</a>
       <select id="sortSelect" class="form-select form-select-sm flex-grow-1" onchange="onSortChange(this)">
         <option value="notaccess" {{#is_notaccess}}{{/is_notaccess}}>Not Accessing Modules</option>
+        <option value="content" {{#is_content}}{{/is_content}}>CPMK Content</option>
         <option value="most" {{#is_most}}{{/is_most}}>Most Visits</option>
         <option value="least" {{#is_least}}{{/is_least}}>Least Visits</option>
         <option value="time" {{#is_time}}{{/is_time}}>Modules Accessing Time</option>
@@ -68,7 +69,7 @@ a {
     </div>
     <div class="text-end">
       <h3 class="fw-bold mb-0"><strong>Course</strong></h3>
-      <h5 class="text-muted">{{course_fullname}} - {{cpmk_name}}</h5>
+      <h5 class="text-muted">{{course_fullname_graph}} - {{cpmk_name_graph}}</h5>
     </div>
   </div>
 </div>
