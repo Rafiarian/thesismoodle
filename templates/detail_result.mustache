@@ -1,0 +1,125 @@
+ {{!
+    @template local_edulog/detail_result
+
+
+    Example context (json):
+    {
+    
+    }
+}}
+<!-- Header -->
+<style>
+.edulog-wrapper {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+}
+.edulog-header .back-button {
+    text-decoration: none;
+    font-size: 20px;
+    color: #000;
+}
+.edulog-course-title h2 {
+    margin-bottom: 0;
+}
+.edulog-course-title h5 {
+    margin-top: 4px;
+    color: #555;
+}
+.table td, .table th {
+    vertical-align: middle !important;
+}
+a {
+    text-decoration: underline;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="edulog-wrapper container mt-2">
+    <div class="edulog-header d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex align-items-center">
+            <a href="javascript:history.back()" class="btn me-3">&larr;</a>
+            <h2 class="fw-bold mb-0">{{username}}</h2>
+        </div>
+        <div class="text-end">
+            <h3 class="fw-bold mb-0"><strong>Course</strong></h3>
+            <h5 class="text-muted">{{coursefullname}} - {{cpmkname}}</h5>
+        </div>
+    </div>
+</div>
+
+
+<div class="table-responsive">
+    <table class="table table-bordered text-center align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Module</th>
+                <th>Modules Visited</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#modules}}
+            <tr>
+                <td>{{instance_name}}</td>
+                <td>{{visits}} Times</td>
+            </tr>
+            {{/modules}}
+            {{^modules}}
+            <tr>
+                <td colspan="2">No modules accessed yet.</td>
+            </tr>
+            {{/modules}}
+        </tbody>
+    </table>
+</div>
+
+<h4 class="mt-5 mb-3">Learning Modules Activity Chart</h4>
+<div class="container mt-2">
+    <canvas id="activityChart"></canvas>
+</div>
+
+<script>
+    const labels = {{{labels}}};
+    const counts = {{{counts}}};
+    const quizDeadline = '{{#deadline}}{{quiz_deadline}}{{/deadline}}';
+
+    const ctx = document.getElementById('activityChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Number of Access',
+                data: counts,
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                x: { beginAtZero: true },
+                y: { beginAtZero: true }
+            },
+            plugins: {
+                annotation: {
+                    annotations: {
+                        deadlineLine: {
+                            type: 'line',
+                            scaleID: 'x',
+                            value: quizDeadline,
+                            borderColor: 'red',
+                            borderWidth: 2,
+                            label: {
+                                content: 'Quiz Deadline',
+                                enabled: true,
+                                position: 'top'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>

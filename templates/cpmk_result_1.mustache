@@ -63,6 +63,7 @@ a {
         <option value="least" {{#is_least}}{{/is_least}}>Least Visits</option>
         <option value="notaccess" {{#is_notaccess}}{{/is_notaccess}}>Not Accessing Modules</option>
         <option value="time" {{#is_time}}{{/is_time}}>Modules Accessing Time</option>
+        <option value="sword" {{#is_sword}}{{/is_sword}}>SWORD</option>
       </select>
     </div>
     <div class="text-end">
@@ -86,7 +87,7 @@ a {
     <tbody>
       {{#records}}
       <tr>
-        <td><a href="{{{profileurl}}}">{{name}}</a></td>
+        <td><a href="{{{profileurl}}}">{{namee}}</a></td>
         <td>{{cpmk_name}}</td>
         <td>{{visits}} Times</td>
         <td>{{#final_score}}{{final_score}}{{/final_score}}{{^final_score}}—{{/final_score}}</td>

@@ -66,12 +66,13 @@ a {
         <option value="most" {{#is_most}}{{/is_most}}>Most Visits</option>
         <option value="least" {{#is_least}}{{/is_least}}>Least Visits</option>
         <option value="notaccess" {{#is_notaccess}}{{/is_notaccess}}>Not Accessing Modules</option>
+        <option value="sword" {{#is_sword}}{{/is_sword}}>SWORD</option>
         
       </select>
     </div>
     <div class="text-end">
       <h3 class="fw-bold mb-0"><strong>Course</strong></h3>
-      <h5 class="text-muted">{{course_fullname}} - {{cpmk_name}}</h5>
+      <h5 class="text-muted">{{course_fullname_graph}} - {{cpmk_name_graph}}</h5>
     </div>
   </div>
 </div>
@@ -82,7 +83,6 @@ a {
 
 <div class="container mt-4">
     <canvas id="myChart" width="400" height="200"></canvas>
-    <button id="toggleView" class="btn btn-primary mt-3">Switch to Weekly View</button>
 </div>
 
 <script>

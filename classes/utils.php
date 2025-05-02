@@ -21,7 +21,7 @@
     
         $sql = "SELECT 
                     u.id, 
-                    CONCAT(u.firstname, ' ', u.lastname) AS name, 
+                    CONCAT(u.firstname, ' ', u.lastname) AS namee, 
                     c.cpmk_name, 
                     COUNT(l.id) AS visits,
                     d.fullname AS course_fullname
@@ -36,6 +36,12 @@
                     )
                 JOIN {user} u 
                     ON u.id = ue.userid
+                JOIN {context} ctx
+                    ON ctx.instanceid = d.id AND ctx.contextlevel = 50
+                JOIN {role_assignments} ra 
+                    ON ra.userid = u.id AND ra.contextid = ctx.id
+                JOIN {role} r 
+                    ON r.id = ra.roleid
                 LEFT JOIN {logstore_standard_log} l 
                     ON l.userid = u.id
                     AND l.contextinstanceid = m.coursemoduleid 
@@ -48,7 +54,8 @@
                         WHERE cq.cpmkid = c.id
                     )
                 WHERE c.id = :cpmkid
-                GROUP BY u.id, name, c.cpmk_name, d.fullname
+                AND r.shortname = 'student'
+                GROUP BY u.id, namee, c.cpmk_name, d.fullname
                 ORDER BY visits DESC";
     
         return $DB->get_records_sql($sql, ['cpmkid' => $cpmkid]);
@@ -59,7 +66,7 @@
 
         $sql = "SELECT 
                     u.id, 
-                    CONCAT(u.firstname, ' ', u.lastname) AS name, 
+                    CONCAT(u.firstname, ' ', u.lastname) AS namee, 
                     c.cpmk_name, 
                     COUNT(l.id) AS visits,
                     d.fullname AS course_fullname
@@ -74,6 +81,12 @@
                     )
                 JOIN {user} u 
                     ON u.id = ue.userid
+                JOIN {context} ctx
+                    ON ctx.instanceid = d.id AND ctx.contextlevel = 50
+                JOIN {role_assignments} ra 
+                    ON ra.userid = u.id AND ra.contextid = ctx.id
+                JOIN {role} r 
+                    ON r.id = ra.roleid
                 LEFT JOIN {logstore_standard_log} l 
                     ON l.userid = u.id
                     AND l.contextinstanceid = m.coursemoduleid 
@@ -86,7 +99,8 @@
                         WHERE cq.cpmkid = c.id
                     )
                 WHERE c.id = :cpmkid
-                GROUP BY u.id, name, c.cpmk_name, d.fullname
+                AND r.shortname = 'student'
+                GROUP BY u.id, namee, c.cpmk_name, d.fullname
                 ORDER BY visits ASC";    
 
         return $DB->get_records_sql($sql, ['cpmkid' => $cpmkid]);
@@ -103,17 +117,24 @@
                     0 AS visits
                 FROM {local_cpmk} c
                 JOIN {local_cpmk_to_modules} m ON m.cpmkid = c.id
-                JOIN mdl_course d ON d.id = c.courseid
-                JOIN mdl_user_enrolments ue ON ue.enrolid IN (
-                    SELECT e.id FROM mdl_enrol e WHERE e.courseid = d.id
+                JOIN {course} d ON d.id = c.courseid
+                JOIN {user_enrolments} ue ON ue.enrolid IN (
+                    SELECT e.id FROM {enrol} e WHERE e.courseid = d.id
                 )
-                JOIN mdl_user u ON u.id = ue.userid
+                JOIN {user} u ON u.id = ue.userid
+                JOIN {context} ctx 
+                    ON ctx.instanceid = d.id AND ctx.contextlevel = 50
+                JOIN {role_assignments} ra 
+                    ON ra.userid = u.id AND ra.contextid = ctx.id
+                JOIN {role} r 
+                    ON r.id = ra.roleid
                 LEFT JOIN {logstore_standard_log} l 
                     ON l.contextinstanceid = m.coursemoduleid 
                     AND l.target = 'course_module'
                     AND l.courseid = c.courseid
                     AND l.userid = u.id
                 WHERE c.id = :cpmkid
+                AND r.shortname = 'student'
                 GROUP BY u.id, name, c.cpmk_name, d.fullname
                 HAVING COUNT(l.id) = 0";
     
@@ -144,14 +165,18 @@
         $latest_deadline_date = date('Y-m-d', $latest_deadline_timestamp);
         $start_date = date('Y-m-d', strtotime('-45 days', $latest_deadline_timestamp));
     
-        // Step 2: Fetch access counts between start_date and latest_deadline
+        // Step 2: Fetch access counts between start_date and latest_deadline (only for students)
         $sql = "SELECT 
                     DATE(FROM_UNIXTIME(l.timecreated)) AS access_date,
                     COUNT(l.id) AS access_count
                 FROM {logstore_standard_log} l
                 JOIN {local_cpmk_to_modules} m ON m.coursemoduleid = l.contextinstanceid
+                JOIN {context} ctx ON ctx.instanceid = l.courseid AND ctx.contextlevel = 50
+                JOIN {role_assignments} ra ON ra.userid = l.userid AND ra.contextid = ctx.id
+                JOIN {role} r ON r.id = ra.roleid
                 WHERE m.cpmkid = :cpmkid
                   AND l.target = 'course_module'
+                  AND r.shortname = 'student'
                   AND l.timecreated BETWEEN UNIX_TIMESTAMP(:start_date) AND UNIX_TIMESTAMP(:end_date)
                 GROUP BY access_date
                 ORDER BY access_date ASC";
@@ -170,7 +195,8 @@
     
         // Step 4: Fill the full date range
         $records = [];
-
+        $labels = [];
+        $counts = [];
     
         $current = strtotime($start_date);
         $end = strtotime($latest_deadline_date);
@@ -179,11 +205,6 @@
             $date = date('Y-m-d', $current);
             $count = isset($access_map[$date]) ? $access_map[$date] : 0;
     
-            $records[] = (object)[
-                'labels' => json_encode($records['labels']),
-                'counts' => json_encode($records['counts']),
-            ];
-
             $labels[] = $date;
             $counts[] = $count;
             $current = strtotime('+1 day', $current);
@@ -191,9 +212,34 @@
     
         // Step 5: Return for Mustache and Chart
         return [
-            'records' => $records,
+            'records' => $access_data, // optional: not required for charting if only using labels/counts
             'labels' => $labels,
             'counts' => $counts,
+        ];
+    }
+
+    public static function get_course_and_cpmk_name($cpmkid) {
+        global $DB;
+    
+        $sql = "SELECT 
+                    c.cpmk_name, 
+                    d.fullname AS course_fullname
+                FROM {local_cpmk} c
+                JOIN {course} d ON d.id = c.courseid
+                WHERE c.id = :cpmkid";
+    
+        $result = $DB->get_record_sql($sql, ['cpmkid' => $cpmkid]);
+    
+        if (!$result) {
+            return [
+                'cpmk_name' => '',
+                'course_fullname' => ''
+            ];
+        }
+    
+        return [
+            'cpmk_name' => $result->cpmk_name,
+            'course_fullname' => $result->course_fullname
         ];
     }
 
@@ -228,12 +274,6 @@
                 'quiz_name' => $quiz_name[$i],
             ];
         }
-    
-        // // Flatten: Only take the first quiz (you can adjust if needed)
-        // $quiz_deadline_value = isset($quiz_deadline[0]) ? $quiz_deadline[0] : null;
-        // $quiz_name_value = isset($quiz_name[0]) ? $quiz_name[0] : null;
-
-        error_log('Deadline Utils' . print_r($deadline, true));
         // Return neatly
         return $deadline;
     }

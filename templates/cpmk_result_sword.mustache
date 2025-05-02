@@ -1,0 +1,112 @@
+ {{!
+    @template local_edulog/sword
+
+
+    Example context (json):
+    {
+    
+    }
+}}
+<!-- Header -->
+<style>
+.edulog-wrapper {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+}
+.edulog-header .back-button {
+    text-decoration: none;
+    font-size: 20px;
+    color: #000;
+}
+.edulog-course-title h2 {
+    margin-bottom: 0;
+}
+.edulog-course-title h5 {
+    margin-top: 4px;
+    color: #555;
+}
+.table td, .table th {
+    vertical-align: middle !important;
+}
+a {
+    text-decoration: underline;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+.edulog-wrapper {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.edulog-header .back-button {
+  text-decoration: none;
+  font-size: 20px;
+  color: #000;
+}
+
+.edulog-course-title h2 {
+  margin-bottom: 0;
+}
+
+.edulog-course-title h5 {
+  margin-top: 4px;
+  color: #555;
+}
+
+.table td, .table th {
+  vertical-align: middle !important;
+}
+
+a {
+  text-decoration: underline;
+}
+</style>
+
+<div class="edulog-wrapper container mt-2">
+  <div class="edulog-header d-flex justify-content-between align-items-center mb-2">
+    <div class="d-flex align-items-center">
+      <a href="index.php" class="btn me-3">&larr;</a>
+      <select id="sortSelect" class="form-select form-select-sm flex-grow-1" onchange="onSortChange(this)">
+        <option value="sword" {{#is_sword}}{{/is_sword}}>SWORD</option>
+        <option value="most" {{#is_most}}{{/is_most}}>Most Visits</option>
+        <option value="least" {{#is_least}}{{/is_least}}>Least Visits</option>
+        <option value="notaccess" {{#is_notaccess}}{{/is_notaccess}}>Not Accessing Modules</option>
+        <option value="time" {{#is_time}}{{/is_time}}>Modules Accessing Time</option>
+      </select>
+    </div>
+    <div class="text-end">
+      <h3 class="fw-bold mb-0"><strong>Course</strong></h3>
+      <h5 class="text-muted">{{course_fullname}} - {{cpmk_name}}</h5>
+    </div>
+  </div>
+</div>
+
+<h4 class="mt-4 mb-3 fw-semibold border-top pt-3">Modules and Number of Modules Visited by <strong>{{username}}</strong></h4>
+
+<div class="container mt-4">
+  <h3 class="mb-3">SWORD Result for CPMK {{cpmkid}}</h3>
+  <pre style="background-color: #f9f9f9; padding: 1rem; border: 1px solid #ddd;">
+{{#py_output}}
+{{.}}
+{{/py_output}}
+  </pre>
+</div>
+
+<h4 class="mt-5 mb-3">Learning Modules Activity Chart</h4>
+<div class="container mt-2">
+    <canvas id="activityChart"></canvas>
+</div>
+
+<script>
+function onSortChange(select) {
+  const selectedValue = select.value;
+  const params = new URLSearchParams(window.location.search);
+  params.set('sort', selectedValue);
+  window.location.href = window.location.pathname + '?' + params.toString();
+}
+</script>
