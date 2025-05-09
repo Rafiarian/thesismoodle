@@ -85,3 +85,13 @@
         <strong>No materials available!</strong> This course has no available modules to select.
     </div>
 {{/hasmaterials}}
+
+<script>
+    document.querySelector('form').addEventListener('submit', function(event) {
+        const checked = document.querySelectorAll('input[name="assignmentids[]"]:checked');
+        if (checked.length === 0) {
+            event.preventDefault(); // prevent form from submitting
+            alert('Please select at least one learning module before continuing.');
+        }
+    });
+</script>

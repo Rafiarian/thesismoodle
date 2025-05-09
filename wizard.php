@@ -361,22 +361,6 @@ switch ($step) {
             $total_items += count($summary['quizids']);
         }
 
-        //Show ID Instead of names
-        // $get_ids = function ($ids) {
-        //     return array_map('intval', (array)$ids);
-        // };
-
-        // if (!empty($summary['materialids'])) {
-        //     $templatecontext['materials'] = ['items' => $get_ids($summary['materialids'])];
-        // }
-        
-        // if (!empty($summary['assignmentids'])) {
-        //     $templatecontext['assignments'] = ['items' => $get_ids($summary['assignmentids'])];
-        // }
-        
-        // if (!empty($summary['quizids'])) {
-        //     $templatecontext['quizzes'] = ['items' => $get_ids($summary['quizids'])];
-        // }
 
         // Distribute 100% evenly
         $even_weight = $total_items > 0 ? floor(100 / $total_items) : 0;
@@ -398,7 +382,7 @@ switch ($step) {
         break;
 
     default:
-        redirect(new moodle_url('/local/message1/wizard.php', ['step' => 1]));
+        redirect(new moodle_url('/local/edulog/index.php'));
         break;
 }
 

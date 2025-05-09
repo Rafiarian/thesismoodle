@@ -90,3 +90,31 @@
         <button type="submit" class="btn btn-success">Finish & Save</button>
     </form>
 </div>
+
+<script>
+document.querySelector('form').addEventListener('submit', function(event) {
+    const name = document.getElementById('cpmkname').value.trim();
+    if (!name) {
+        alert("CPMK Name is required.");
+        event.preventDefault();
+        return;
+    }
+
+    // Collect all weight inputs
+    const weightInputs = document.querySelectorAll('input[name^="weights["]');
+    let total = 0;
+
+    weightInputs.forEach(input => {
+        const value = parseFloat(input.value);
+        if (!isNaN(value)) {
+            total += value;
+        }
+    });
+
+    if (total !== 100) {
+        alert("Total weight of all assignments and quizzes must equal 100. Currently: " + total);
+        event.preventDefault();
+        return;
+    }
+});
+</script>

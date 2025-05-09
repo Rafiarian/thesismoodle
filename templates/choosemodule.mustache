@@ -51,7 +51,7 @@
         <div class="list-group mb-3">
             {{#materials}}
                 <label class="list-group-item">
-                    <input type="checkbox" name="materialids[]" value="{{id}}" class="form-check-input me-1">
+                    <input type="checkbox" name="materialids[]" required value="{{id}}" class="form-check-input me-1">
                     {{modname}}: {{name}}
                 </label>
             {{/materials}}
@@ -84,3 +84,13 @@
         <strong>No materials available!</strong> This course has no available modules to select.
     </div>
 {{/hasmaterials}}
+
+<script>
+    document.querySelector('form').addEventListener('submit', function(event) {
+        const checked = document.querySelectorAll('input[name="materialids[]"]:checked');
+        if (checked.length === 0) {
+            event.preventDefault(); // prevent form from submitting
+            alert('Please select at least one learning module before continuing.');
+        }
+    });
+</script>
