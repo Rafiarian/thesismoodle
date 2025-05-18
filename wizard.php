@@ -147,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Finally: cleanup & redirect
             unset($_SESSION['wizard']);
-            redirect(new moodle_url('/local/edulog/wizard.php'), 'Message inserted!', 2);
+            redirect(new moodle_url('/local/edulog/index.php'), 'Message inserted!', 2);
                 }
             }
 

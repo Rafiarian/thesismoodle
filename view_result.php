@@ -78,19 +78,22 @@ switch ($sort) {
     }
     unset($record); 
 
+ $should_run_script = optional_param('runcmd', 0, PARAM_INT);
 // SWORD HANDLING UNTUK PYTHONNYA While keeping the view_result clean
 if ($sort === 'sword') {
+     // 1. Ensure temp dir exists
     $tempdir = __DIR__ . '/temp';
-    $inputfile = "$tempdir/sword_input_$cpmkid.csv";
-    $outputfile = "$tempdir/sword_output.json";
-
-    // 1. Get log data
-    $logdata = utils_sword::get_most_visited_by_user($cpmkid);
-
-    // 2. Ensure temp dir exists
     if (!is_dir($tempdir)) {
         mkdir($tempdir, 0777, true);
     }
+    $tempdir = str_replace('\\', '/', realpath($tempdir));
+    $outputfile = "$tempdir/output/sword_input_{$cpmkid}_sword_output.json";
+    
+    $inputfile = "$tempdir/sword_input_$cpmkid.csv";
+
+    // 2. Get log data
+    $logdata = utils_sword::get_most_visited_by_user($cpmkid);
+
 
     // 3. Save to CSV
     $fp = fopen($inputfile, 'w');
@@ -110,27 +113,77 @@ if ($sort === 'sword') {
     }
     fclose($fp);
 
-    // 4. Run Python script
-    $python = trim(shell_exec("which python3"));
-    $pycmd = escapeshellcmd("python3 " . __DIR__ . "/py/sword.py $inputfile $outputfile");
-    exec($pycmd, $py_output, $ret);
-
+    if ($should_run_script) {
+        $pycmd = escapeshellcmd("python3 " . __DIR__ . "/py/sword.py $inputfile $outputfile");
+        exec($pycmd, $py_output, $ret);
+        error_log("Python executed manually. Output: " . implode("\n", $py_output));
+    }
     // 5. Read JSON result
-    $console_output = [];
+    $structured_output = [];
+
     if (file_exists($outputfile)) {
-        $json = json_decode(file_get_contents($outputfile), true);
-        $console_output = $json['console_output'] ?? ['No output returned.'];
+        $json_raw = file_get_contents($outputfile);
+        error_log("Raw JSON from Python: " . $json_raw);
+
+        $json = json_decode($json_raw, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $structured_output[] = [
+                'category' => 'Error',
+                'lines' => ['JSON decode error: ' . json_last_error_msg()]
+            ];
+        } elseif (is_array($json)) {
+            foreach ($json as $category => $lines) {
+                if (is_array($lines) && count(array_filter($lines)) > 0) {
+                    $structured_output[] = [
+                        'category' => $category,
+                        'lines' => $lines
+                    ];
+                }
+            }
+        } else {
+            $structured_output[] = [
+                'category' => 'Error',
+                'lines' => ['Invalid JSON format received.']
+            ];
+        }
+    } else {
+        $structured_output[] = [
+            'category' => 'Error',
+            'lines' => ["Output file not found at path: $outputfile"]
+        ];
     }
 
+    error_log('Final structured_output: ' . print_r($structured_output, true));
+
     $templatecontext = [
         'cpmkid' => $cpmkid,
-        'py_output' => $console_output,
+        'py_output' => $structured_output,
+        'is_sword' => true
     ];
-} else {
+} 
+else {
     // Default template context
     $templatecontext = [
-        'cpmkid' => $cpmkid,
-        'records' => $records,
+        'view_detail' => new moodle_url('/local/edulog/view_result.php', ['id' => $records->id ?? 0]),
+        'course_fullname' => $records ? reset($records)->course_fullname : '',
+        'cpmk_name' => $records ? reset($records)->cpmk_name : '',
+        'records' => array_values($records),
+        'labels' => json_encode($labels ?? []),
+        'counts' => json_encode($counts ?? []),
+        'course_fullname_graph' => $cpmk_data['course_fullname'] ?? '',
+        'cpmk_name_graph' => $cpmk_data['cpmk_name'] ?? '',
+        'py_output' => $structured_output,
+        'deadline' => $deadline ?? '',
+        'modules' => array_values($modules ?? []),
+        'assignments' => array_values($assignments ?? []),
+        'quizzes' => array_values($quizzes ?? []),
+        'is_most' => $sort === 'most',
+        'is_least' => $sort === 'least',
+        'is_none' => $sort === 'notaccess',
+        'is_time' => $sort === 'time',
+        'is_sword' => $sort === 'sword',
+        'is_content' => $sort === 'content',
     ];
 
     if ($sort === 'time') {
@@ -141,29 +194,30 @@ if ($sort === 'sword') {
         $templatecontext['deadline'] = $deadline;
     }
 }
-
-// Prepare data for Mustache
-$templatecontext = [
-    'view_detail' => new moodle_url('/local/edulog/view_result.php', ['id' => $records->id]),
-    'course_fullname' => $records ? reset($records)->course_fullname : '',
-    'cpmk_name' => $records ? reset($records)->cpmk_name : '',
-    'records' => array_values($records),
-    'labels' => json_encode($labels), //cpmk_graph ⬅ encode ke JSON
-    'counts' => json_encode($counts), //cpmk_graph
-    'course_fullname_graph' => $cpmk_data['course_fullname'] ?? '', //cpmk_graph
-    'cpmk_name_graph' => $cpmk_data['cpmk_name'] ?? '', //cpmk_graph
-    'deadline' => isset($deadline) ? $deadline : '',
-    'modules' => array_values($modules),   //cpmk_content
-    'assignments' => array_values($assignments), //cpmk_content
-    'quizzes' => array_values($quizzes),$quizzes, //cpmk_content
-    'is_most' => $sort === 'most', //sorting function
-    'is_least' => $sort === 'least',
-    'is_none' => $sort === 'notaccess',
-    'is_time' => $sort === 'time',
-    'is_sword ' => $sort === 'sword',
-    'is_content' => $sort === 'content',
-];
-
+    
+    // Prepare data for Mustache
+    $templatecontext = [
+        'view_detail' => new moodle_url('/local/edulog/view_result.php', ['id' => $records->id ?? 0]),
+        'course_fullname' => $records ? reset($records)->course_fullname : '',
+        'cpmk_name' => $records ? reset($records)->cpmk_name : '',
+        'records' => array_values($records),
+        'labels' => json_encode($labels ?? []),
+        'counts' => json_encode($counts ?? []),
+        'course_fullname_graph' => $cpmk_data['course_fullname'] ?? '',
+        'cpmk_name_graph' => $cpmk_data['cpmk_name'] ?? '',
+        'py_output' => $structured_output,
+        'deadline' => $deadline ?? '',
+        'modules' => array_values($modules ?? []),
+        'assignments' => array_values($assignments ?? []),
+        'quizzes' => array_values($quizzes ?? []),
+        'is_most' => $sort === 'most',
+        'is_least' => $sort === 'least',
+        'is_none' => $sort === 'notaccess',
+        'is_time' => $sort === 'time',
+        'is_sword' => $sort === 'sword',
+        'is_content' => $sort === 'content',
+    ];
+    error_log(print_r($templatecontext, true));
 // Setup Moodle page
 $PAGE->set_url(new moodle_url('/local/edulog/view_result.php', ['cpmkid' => $cpmkid]));
 $PAGE->set_context(context_system::instance());

@@ -87,14 +87,41 @@ a {
   </div>
 </div>
 
-<h4 class="mt-4 mb-3 fw-semibold border-top pt-3">Modules and Number of Modules Visited by <strong>{{username}}</strong></h4>
-
+<h4 class="mt-4 mb-3 fw-semibold border-top pt-3">SWORD Result for CPMK {{cpmk_name_graph}}</h4>
+<form method="post" class="mb-3">
+    <input type="hidden" name="sesskey" value="{{sesskey}}">
+    <input type="hidden" name="runcmd" value="1">
+    <button type="submit" class="btn btn-primary btn-sm">🔁 Run SWORD Analysis</button>
+</form>
 <div class="container mt-4">
-  <h3 class="mb-3">SWORD Result for CPMK {{cpmkid}}</h3>
-  <pre style="background-color: #f9f9f9; padding: 1rem; border: 1px solid #ddd;">
-{{#py_output}}
+  <pre style="background-color: #f9f9f9; padding: 0,5rem; border: 1px solid #ddd;">
+<div class="accordion">
+  {{#py_output}}
+  <div class="card mb-2 border rounded shadow-sm">
+    <div class="card-header py-1 px-2" id="heading-{{@index}}">
+      <h2 class="mb-0">
+        <button class="btn btn-link text-left w-100" type="button"
+                data-toggle="collapse"
+                data-target="#collapse-{{@index}}"
+                aria-expanded="false"
+                aria-controls="collapse-{{@index}}">
+          {{category}}
+        </button>
+      </h2>
+    </div>
+
+    <div id="collapse-{{@index}}" class="collapse" aria-labelledby="heading-{{@index}}">
+      <div class="card-body py-2 px-3">
+        <pre class="mb-0" style="white-space: pre-wrap; font-size: 0.85rem;">
+{{#lines}}
 {{.}}
-{{/py_output}}
+{{/lines}}
+        </pre>
+      </div>
+    </div>
+  </div>
+  {{/py_output}}
+</div>
   </pre>
 </div>
 
