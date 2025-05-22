@@ -66,9 +66,6 @@ switch ($sort) {
         break;
 }
 
-    error_log('Cek data content Modules' . print_r($modules, true));
-    error_log('Cek data content Assignment' . print_r($assignments, true));
-    error_log('Cek data content Quizzes' . print_r($quizzes, true));
 
     foreach ($records as &$record) {
         $record->profileurl = new moodle_url('/local/edulog/details.php', [
@@ -95,7 +92,12 @@ if ($sort === 'sword') {
     $logdata = utils_sword::get_most_visited_by_user($cpmkid);
 
 
-    // 3. Save to CSV
+
+
+    if ($should_run_script) {
+        $pycmd = escapeshellcmd("python3 " . __DIR__ . "/py/sword.py $inputfile $outputfile");
+        exec($pycmd, $py_output, $ret);
+            // 3. Save to CSV
     $fp = fopen($inputfile, 'w');
     fputcsv($fp, ['Time', 'User full name', 'Affected user', 'Event context', 'Component', 'Event name','Description', 'Origin', 'IP address']);
     foreach ($logdata as $row) {
@@ -112,11 +114,6 @@ if ($sort === 'sword') {
         ]);
     }
     fclose($fp);
-
-    if ($should_run_script) {
-        $pycmd = escapeshellcmd("python3 " . __DIR__ . "/py/sword.py $inputfile $outputfile");
-        exec($pycmd, $py_output, $ret);
-        error_log("Python executed manually. Output: " . implode("\n", $py_output));
     }
     // 5. Read JSON result
     $structured_output = [];

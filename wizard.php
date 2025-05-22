@@ -171,7 +171,7 @@ switch ($step) {
             redirect(new moodle_url('/local/edulog/wizard.php', ['step' => 1]));
         }
 
-        $excluded_mods = ['assign', 'quiz', 'forum'];
+        $excluded_mods = ['assign', 'forum'];
         $modinfo = get_fast_modinfo($courseid);
         $materials = [];
 
