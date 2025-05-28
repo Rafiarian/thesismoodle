@@ -3,7 +3,9 @@
     "",
     "Pattern   -Frequent occurrence of activity-",
     "",
-    "Activity mod_url: course module viewed: Mean=2.000000, SD=nan",
+    "Activity mod_book: course module viewed: Mean=1.000000, SD=nan",
+    "Activity mod_resource: course module viewed: Mean=1.000000, SD=nan",
+    "Activity mod_url: course module viewed: Mean=4.000000, SD=nan",
     "",
     "There were 0 events with an unusual frequency."
   ],
@@ -11,7 +13,7 @@
     "",
     "Pattern   -Occurrence of directly repeating activity-",
     "",
-    "There were 1 directly repeated events over 1 cases."
+    "There were 2 directly repeated events over 1 cases."
   ],
   "Activity executed by unauthorized resource": [
     "",
@@ -30,7 +32,7 @@
     "",
     "Pattern   -Activities executed by number of resources (per event)-",
     "",
-    "Mean resources = 0.500000, SD = nan",
+    "Mean resources = 0.166667, SD = nan",
     "There were 0 deviations from the number of resources per activity."
   ],
   "Occurrence of activity outside of time period": [
@@ -51,17 +53,23 @@
     "",
     "---Detected unusual frequencies in Rafi Arian---",
     "Unusual logging delay for activity |mod_url: course module viewed|",
-    "It occurred 00:00:00; mean 02:42:00, SD 00:09:54",
+    "It occurred 00:00:00; mean 02:38:31, SD 00:07:01",
     "---Detected unusual frequencies in Rafi Arian---",
     "Unusual logging delay for activity |mod_url: course module viewed|",
-    "It occurred 00:00:00; mean 02:42:00, SD 00:09:54",
-    "There were 2 events at an unusual time (logging)."
+    "It occurred 00:00:00; mean 02:38:31, SD 00:07:01",
+    "---Detected unusual frequencies in Rafi Arian---",
+    "Unusual logging delay for activity |mod_url: course module viewed|",
+    "It occurred 00:00:00; mean 02:38:31, SD 00:07:01",
+    "---Detected unusual frequencies in Rafi Arian---",
+    "Unusual logging delay for activity |mod_url: course module viewed|",
+    "It occurred 00:00:00; mean 02:38:31, SD 00:07:01",
+    "There were 4 events at an unusual time (logging)."
   ],
   "Time between activities out of bounds": [
     "",
     "Pattern   -Time between activities out of bounds-",
     "",
-    "In case Rafi Arian, there was a duration of 00:14:00 between |mod_url: course module viewed| and |mod_url: course module viewed|.",
+    "In case Rafi Arian, there was a duration of 00:13:59 between |mod_url: course module viewed| and |mod_book: course module viewed|.",
     "There were 1 events with unusual durations."
   ],
   "Duration of trace out of bounds": [

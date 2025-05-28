@@ -20,48 +20,42 @@
         global $DB;
 
         $sql = "SELECT 
-                    FROM_UNIXTIME(l.timecreated, '%d/%m/%y, %H:%i') AS time,
-                    CONCAT(u.firstname, ' ', u.lastname) AS user_full_name,
-                    COALESCE(CONCAT(ru.firstname, ' ', ru.lastname), '-') AS affected_user,
-                    CONCAT(UPPER(l.component), ': ', 
-                        CASE mo.name
-                            WHEN 'url' THEN url.name
-                            WHEN 'book' THEN book.name
-                            WHEN 'resource' THEN resource.name
-                            WHEN 'quiz' THEN quiz.name
-                            ELSE 'Unknown'
-                        END
-                    ) AS event_context,
-                    l.component,
-                    REPLACE(SUBSTRING_INDEX(l.eventname, '\\\\', -1), '_', ' ') AS event_name,
-                    CONCAT('The user ', u.firstname, ' ', u.lastname, ' accessed ', 
-                        CASE mo.name
-                            WHEN 'url' THEN url.name
-                            WHEN 'book' THEN book.name
-                            WHEN 'resource' THEN resource.name
-                            WHEN 'quiz' THEN quiz.name
-                            ELSE 'Unknown'
-                        END
-                    ) AS description,
-                    l.origin,
-                    l.ip
-                FROM mdl_logstore_standard_log l
-                JOIN mdl_local_cpmk_to_modules m ON m.coursemoduleid = l.contextinstanceid
-                JOIN mdl_user u ON u.id = l.userid
-                LEFT JOIN mdl_user ru ON ru.id = l.relateduserid
-                JOIN mdl_course_modules cmid ON cmid.id = l.contextinstanceid
-                JOIN mdl_modules mo ON mo.id = cmid.module
-                LEFT JOIN mdl_url url ON url.id = cmid.instance AND mo.name = 'url'
-                LEFT JOIN mdl_book book ON book.id = cmid.instance AND mo.name = 'book'
-                LEFT JOIN mdl_resource resource ON resource.id = cmid.instance AND mo.name = 'resource'
-                LEFT JOIN mdl_quiz quiz ON quiz.id = cmid.instance AND mo.name = 'quiz'
-                LEFT JOIN mdl_role_assignments ra ON ra.userid = u.id
-                LEFT JOIN mdl_context ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50 -- 50 = course
-                LEFT JOIN mdl_role r ON r.id = ra.roleid
-                WHERE m.cpmkid = :cpmkid
-                AND (r.shortname IS NULL OR r.shortname NOT IN ('editingteacher', 'teacher', 'manager'))
-                ORDER BY l.timecreated DESC";    
+            l.id AS logid,
+            FROM_UNIXTIME(l.timecreated, '%d/%m/%y, %H:%i') AS time,
+            CONCAT(u.firstname, ' ', u.lastname) AS user_full_name,
+            COALESCE(CONCAT(ru.firstname, ' ', ru.lastname), '-') AS affected_user,
+            CONCAT(UPPER(l.component), ': ', 
+                COALESCE(url.name, book.name, resource.name, quiz.name, 'Unknown')
+            ) AS event_context,
+            l.component,
+            REPLACE(SUBSTRING_INDEX(l.eventname, '\\\\', -1), '_', ' ') AS event_name,
+            CONCAT('The user ', u.firstname, ' ', u.lastname, ' accessed ', 
+                COALESCE(url.name, book.name, resource.name, quiz.name, 'Unknown')
+            ) AS description,
+            l.origin,
+            l.ip
+        FROM {logstore_standard_log} l
+        JOIN {local_cpmk_to_modules} m ON m.coursemoduleid = l.contextinstanceid
+        JOIN {user} u ON u.id = l.userid
+        LEFT JOIN {user} ru ON ru.id = l.relateduserid
+        JOIN {course_modules} cmid ON cmid.id = l.contextinstanceid
+        JOIN {modules} mo ON mo.id = cmid.module
+        LEFT JOIN {url} url ON url.id = cmid.instance AND mo.name = 'url'
+        LEFT JOIN {book} book ON book.id = cmid.instance AND mo.name = 'book'
+        LEFT JOIN {resource} resource ON resource.id = cmid.instance AND mo.name = 'resource'
+        LEFT JOIN {quiz} quiz ON quiz.id = cmid.instance AND mo.name = 'quiz'
+        LEFT JOIN {role_assignments} ra ON ra.userid = u.id
+        LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
+        LEFT JOIN {role} r ON r.id = ra.roleid
+        WHERE m.cpmkid = :cpmkid
+        AND l.contextlevel = 70
+        AND (r.id IS NULL OR r.shortname NOT IN ('editingteacher', 'teacher', 'manager'))
+        ORDER BY l.timecreated DESC";    
         
         return $DB->get_records_sql($sql, ['cpmkid' => $cpmkid], 0, 0);
     }
  }
+
+
+
+ 
