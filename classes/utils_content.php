@@ -18,11 +18,21 @@
  class utils_content {
     public static function get_cpmk_modules($cpmkid) {
         global $DB;
-        $sql = "SELECT cm.name AS module_name
+        $sql = "SELECT cmid.id AS cmid, mo.name AS module_type, 
+                    CASE mo.name
+                        WHEN 'url' THEN url.name
+                        WHEN 'book' THEN book.name
+                        WHEN 'resource' THEN resource.name
+                        WHEN 'quiz' THEN quiz.name
+                        ELSE 'Unknown'
+                    END AS module_name
                 FROM {local_cpmk_to_modules} m
                 JOIN {course_modules} cmid ON cmid.id = m.coursemoduleid
                 JOIN {modules} mo ON mo.id = cmid.module
-                JOIN {url} cm ON cm.id = cmid.instance AND mo.name = 'url'
+                LEFT JOIN {url} url ON url.id = cmid.instance AND mo.name = 'url'
+                LEFT JOIN {book} book ON book.id = cmid.instance AND mo.name = 'book'
+                LEFT JOIN {resource} resource ON resource.id = cmid.instance AND mo.name = 'resource'
+                LEFT JOIN {quiz} quiz ON quiz.id = cmid.instance AND mo.name = 'quiz'
                 WHERE m.cpmkid = :cpmkid";
         return $DB->get_records_sql($sql, ['cpmkid' => $cpmkid]);
     }

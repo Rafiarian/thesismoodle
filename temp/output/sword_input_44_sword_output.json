@@ -1,0 +1,65 @@
+{
+  "Frequent occurrence of activity": [
+    "",
+    "Pattern   -Frequent occurrence of activity-",
+    "",
+    "",
+    "There were 0 events with an unusual frequency."
+  ],
+  "Occurrence of directly repeating activity": [
+    "",
+    "Pattern   -Occurrence of directly repeating activity-",
+    "",
+    "There were 0 directly repeated events over 0 cases."
+  ],
+  "Activity executed by unauthorized resource": [
+    "",
+    "Pattern   -Activity executed by unauthorized resource-",
+    "",
+    "No resource type available. Skipping pattern."
+  ],
+  "Activities executed by number of resources": [
+    "",
+    "Pattern   -Activities executed by number of resources-",
+    "",
+    "Mean resources = nan, SD = nan",
+    "There were 0 deviations from the number of resources."
+  ],
+  "Activities executed by number of resources (per event)": [
+    "",
+    "Pattern   -Activities executed by number of resources (per event)-",
+    "",
+    "Mean resources = nan, SD = nan",
+    "There were 0 deviations from the number of resources per activity."
+  ],
+  "Occurrence of activity outside of time period": [
+    "",
+    "Pattern   -Occurrence of activity outside of time period-",
+    "",
+    "There were 0 events at an unusual time (logging)."
+  ],
+  "Delay between start of trace and activity is out of bounds": [
+    "",
+    "Pattern   -Delay between start of trace and activity is out of bounds-",
+    "",
+    "There were 0 events at an unusual time."
+  ],
+  "Delay between event and logging out of bounds": [
+    "",
+    "Pattern   -Delay between event and logging out of bounds-",
+    "",
+    "There were 0 events at an unusual time (logging)."
+  ],
+  "Time between activities out of bounds": [
+    "",
+    "Pattern   -Time between activities out of bounds-",
+    "",
+    "There were 0 events with unusual durations."
+  ],
+  "Duration of trace out of bounds": [
+    "",
+    "Pattern   -Duration of trace out of bounds-",
+    "",
+    "There were 0 cases with an unusual duration."
+  ]
+}

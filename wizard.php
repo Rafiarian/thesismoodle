@@ -58,14 +58,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect(new moodle_url('/local/edulog/wizard.php', ['step' => 4]));
             break;
         case 4:
-            $quizids = required_param_array('quizids', PARAM_INT);
-            $quizinstanceids = optional_param_array('quizinstanceid', [], PARAM_INT);
+            $summary = $_SESSION['wizard'] ?? [];
+            $courseid = $summary['courseid'] ?? null;
+            $quizids = optional_param_array('quizids', [], PARAM_INT);
+            $modinfo = get_fast_modinfo($courseid); // make sure $courseid is already set
 
             $combined_quizzes = [];
-            foreach ($quizids as $index => $cmid) {
-                // Match instanceid by index fallback if exists
-                $instanceid = $quizinstanceids[$index] ?? null;
-                if ($instanceid !== null) {
+
+            foreach ($quizids as $cmid) {
+                if (isset($modinfo->cms[$cmid])) {
+                    $instanceid = $modinfo->cms[$cmid]->instance;
                     $combined_quizzes[] = [
                         'cmid' => $cmid,
                         'instanceid' => $instanceid,
@@ -73,8 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            // Save to session
-            $_SESSION['wizard']['quizids'] = $combined_quizzes;
+            $_SESSION['wizard']['quizids'] = $combined_quizzes; 
             redirect(new moodle_url('/local/edulog/wizard.php', ['step' => 5]));
             break;
 
@@ -312,6 +313,7 @@ switch ($step) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty(optional_param('cpmkname', '', PARAM_TEXT))) {
             $_SESSION['wizard']['cpmkname'] = required_param('cpmkname', PARAM_TEXT);
         }    
+        
         $summary = $_SESSION['wizard'];
         $coursename = $DB->get_field('course', 'fullname', ['id' => $summary['courseid']]);
         $modinfo = get_fast_modinfo($summary['courseid']);

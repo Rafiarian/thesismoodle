@@ -90,15 +90,14 @@ if ($sort === 'sword') {
 
     // 2. Get log data
     $logdata = utils_sword::get_most_visited_by_user($cpmkid);
-
-
-
+    error_log("Jumlah baris yang diterima: " . count($logdata));
 
     if ($should_run_script) {
         $pycmd = escapeshellcmd("python3 " . __DIR__ . "/py/sword.py $inputfile $outputfile");
         exec($pycmd, $py_output, $ret);
-            // 3. Save to CSV
-    $fp = fopen($inputfile, 'w');
+    
+    // 3. Save to CSV
+    $fp = fopen($inputfile, 'w')    ;
     fputcsv($fp, ['Time', 'User full name', 'Affected user', 'Event context', 'Component', 'Event name','Description', 'Origin', 'IP address']);
     foreach ($logdata as $row) {
         fputcsv($fp, [
@@ -115,7 +114,8 @@ if ($sort === 'sword') {
     }
     fclose($fp);
     }
-    // 5. Read JSON result
+
+    // 4. Read JSON result
     $structured_output = [];
 
     if (file_exists($outputfile)) {
