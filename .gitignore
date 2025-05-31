@@ -1,1 +1,4 @@
-/local/edulog/temp/
+# === Moodle / Web-specific ===
+/temp/
+/edulog/temp/
+local/edulog/temp/
