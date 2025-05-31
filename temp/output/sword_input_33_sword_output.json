@@ -1,9 +1,0 @@
-{
-    "console_output": [
-        "#--Full SWORD Report--",
-        "Not enough cases available. Frequency comparison would not be meaningful.",
-        "There were 1 directly repeated events over 1 cases.",
-        "       CaseID  z_Frequent  n_Repeats  z_Max",
-        "0  Rafi Arian         NaN          1    1.0"
-    ]
-}
