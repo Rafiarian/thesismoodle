@@ -30,34 +30,32 @@ echo $OUTPUT->header();
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     switch ($step) {
-        case 1:
+        case 1: // Handle course selection
             $_SESSION['wizard']['courseid'] = required_param('courseid', PARAM_INT);
             redirect(new moodle_url('/local/edulog/wizard.php', ['step' => 2]));
             break;
-        case 2:
+        case 2: // Handle materials
             $materialids = required_param_array('materialids', PARAM_INT);
             $_SESSION['wizard']['materialids'] = $materialids;
             redirect(new moodle_url('/local/edulog/wizard.php', ['step' => 3]));
             break;
-        case 3:
-            $assignmentids = required_param_array('assignmentids', PARAM_INT);
-            $assignmentinstanceids = optional_param_array('assignmentinstanceid', [], PARAM_INT); // optional to avoid errors if empty
-        
+        case 3: // Handle assignments
+            $assignmentdata = required_param_array('assignmentdata', PARAM_RAW); 
             $combined_assignments = [];
-            foreach ($assignmentids as $index => $cmid) {
-                // Ensure both cmid and instanceid are present
-                if (isset($assignmentinstanceids[$index])) {
-                    $combined_assignments[] = [
-                        'cmid' => $cmid,
-                        'instanceid' => $assignmentinstanceids[$index],
-                    ];
-                }
+
+            foreach ($assignmentdata as $data) {
+                [$cmid, $instanceid] = explode(':', $data);
+                $combined_assignments[] = [
+                    'cmid' => (int)$cmid,
+                    'instanceid' => (int)$instanceid,
+                ];
             }
-        
+
             $_SESSION['wizard']['assignmentids'] = $combined_assignments;
             redirect(new moodle_url('/local/edulog/wizard.php', ['step' => 4]));
             break;
-        case 4:
+
+        case 4: // Handle quizzes
             $summary = $_SESSION['wizard'] ?? [];
             $courseid = $summary['courseid'] ?? null;
             $quizids = optional_param_array('quizids', [], PARAM_INT);
@@ -79,8 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect(new moodle_url('/local/edulog/wizard.php', ['step' => 5]));
             break;
 
-        case 5:
-            
+        case 5: // Handle final confirmation and save
             // Grab CPMK name
             $cpmkname = required_param('cpmkname', PARAM_TEXT);
             $_SESSION['wizard']['cpmkname'] = $cpmkname;
@@ -191,7 +188,7 @@ switch ($step) {
         }
 
         $coursename = $DB->get_field('course', 'fullname', ['id' => $courseid]);
-        $itemsPerPage = 20;
+        $itemsPerPage = 300;
         $page = optional_param('page', 1, PARAM_INT);
         $totalMaterials = count($materials);
         $totalPages = ceil($totalMaterials / $itemsPerPage);
@@ -239,7 +236,7 @@ switch ($step) {
             }
 
         $coursename = $DB->get_field('course', 'fullname', ['id' => $courseid]);
-        $itemsPerPage = 20;
+        $itemsPerPage = 300;
         $page = optional_param('page', 1, PARAM_INT);
         $totalAssignment = count($assignments);
         $totalPages = ceil($totalAssignment / $itemsPerPage);
@@ -287,7 +284,7 @@ switch ($step) {
             }
 
         $coursename = $DB->get_field('course', 'fullname', ['id' => $courseid]);
-        $itemsPerPage = 20;
+        $itemsPerPage = 300;
         $page = optional_param('page', 1, PARAM_INT);
         $totalquizs = count($quizs);
         $totalPages = ceil($totalquizs / $itemsPerPage);

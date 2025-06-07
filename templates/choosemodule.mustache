@@ -23,6 +23,25 @@
     
     }
 }}
+<style>
+.fixed-float-button {
+    position: fixed;
+    bottom: clamp(32px, 8vw, 175px);
+    right: clamp(32px, 5vw, 100px);
+    z-index: 9999;
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease-in-out;
+}
+.fixed-float-button:hover {
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+</style>
 <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
   <div class="d-flex align-items-center">
     <a href="/local/edulog/wizard.php?step=1" class="me-2 text-dark" style="font-size: 1.5rem;">&larr;</a>
@@ -58,7 +77,9 @@
     </div>
 
     <input type="hidden" name="sesskey" value="{{sesskey}}">
-    <button type="submit" class="btn btn-primary">Next</button>
+    <div class="fixed-float-button" >
+        <button type="submit" class="btn btn-primary btn-lg px-4">Next</button>
+    </div>
 </form>
 
 <!-- Pagination -->
@@ -84,6 +105,7 @@
         <strong>No materials available!</strong> This course has no available modules to select.
     </div>
 {{/hasmaterials}}
+<div class="clearfix mb-5">
 
 <script>
     document.querySelector('form').addEventListener('submit', function(event) {

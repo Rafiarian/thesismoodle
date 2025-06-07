@@ -89,8 +89,7 @@ if ($sort === 'sword') {
     $inputfile = "$tempdir/sword_input_$cpmkid.csv";
 
     // 2. Get log data
-    $logdata = utils_sword::get_most_visited_by_user($cpmkid);
-    error_log("Jumlah baris yang diterima: " . count($logdata));
+    $logdata = utils_sword::get_sword($cpmkid);
 
     if ($should_run_script) {
         $pycmd = escapeshellcmd("python3 " . __DIR__ . "/py/sword.py $inputfile $outputfile");
@@ -120,7 +119,6 @@ if ($sort === 'sword') {
 
     if (file_exists($outputfile)) {
         $json_raw = file_get_contents($outputfile);
-        error_log("Raw JSON from Python: " . $json_raw);
 
         $json = json_decode($json_raw, true);
 
@@ -150,8 +148,6 @@ if ($sort === 'sword') {
             'lines' => ["Output file not found at path: $outputfile"]
         ];
     }
-
-    error_log('Final structured_output: ' . print_r($structured_output, true));
 
     $templatecontext = [
         'cpmkid' => $cpmkid,

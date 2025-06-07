@@ -16,7 +16,7 @@
  defined('MOODLE_INTERNAL') || die();
  
  class utils_sword {
-    public static function get_most_visited_by_user($cpmkid) {
+    public static function get_sword($cpmkid) {
         global $DB;
 
         $sql = "SELECT 
