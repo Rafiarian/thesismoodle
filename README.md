@@ -39,8 +39,8 @@ Kontribusi terbuka! Silakan buat issue atau pull request jika ingin membantu pen
 ---
 
 **Dikembangkan oleh:**  
-*Nama: Rafi Arian Yusuf, Evanriza Safiq Ariadi*
-*Pembimbing 1: Prof. Mahendrawathi Er., ST., M.Sc., Ph.D.*
-*Pembimbing 2: Radityo Prasetianto Wibowo, S.Kom, M.Kom*
-*Universitas: Institut Teknologi Sepuluh Nopember*  
+*Nama: Rafi Arian Yusuf, Evanriza Safiq Ariadi* <br>
+*Pembimbing 1: Prof. Mahendrawathi Er., ST., M.Sc., Ph.D.* <br>
+*Pembimbing 2: Radityo Prasetianto Wibowo, S.Kom, M.Kom*<br>
+*Universitas: Institut Teknologi Sepuluh Nopember*  <br>
 *Tugas Akhir – Sistem Informasi, 2025*
