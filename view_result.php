@@ -10,6 +10,7 @@
  */
 
 require('../../config.php');
+require_once($CFG->dirroot . '/lib/weblib.php');
 require_login();
 use local_edulog\utils;
 use local_edulog\utils_sword;
@@ -34,11 +35,11 @@ switch ($sort) {
         break;
     case 'most':
         $records = utils::get_most_visited_with_score($cpmkid);
-        $template = 'local_edulog/cpmk_result_1';
+        $template = 'local_edulog/cpmk_result_mostvisit';
         break;
     case 'least':
         $records = utils::get_least_visited_with_score($cpmkid);
-        $template = 'local_edulog/cpmk_result_2';
+        $template = 'local_edulog/cpmk_result_leastvisit';
         break;
     case 'notaccess':
         $records = utils::get_zero_visited_with_score($cpmkid);
@@ -51,7 +52,7 @@ switch ($sort) {
         $labels = $access_data['labels'];
         $counts = $access_data['counts'];
         $deadline = utils::get_quiz_deadline($cpmkid);
-        $template = 'local_edulog/cpmk_result_3';
+        $template = 'local_edulog/cpmk_result_accesstime';
         break;
     case 'sword':
         $cpmk_data = utils::get_course_and_cpmk_name($cpmkid);
