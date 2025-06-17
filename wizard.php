@@ -155,234 +155,231 @@ if ($step <= 4) {
 }
 
 switch ($step) {
-    case 1:
-        $courses = enrol_get_users_courses($USER->id);
-        $templatecontext = [
-            'courses' => array_values($courses)
-        ];
-        echo $OUTPUT->render_from_template('local_edulog/choosecourse', $templatecontext);
-        break;
+        case 1:
+            render_choose_course();
+            break;
+        case 2:
+            render_choose_modules();
+            break;
+        case 3:
+            render_choose_assignment();
+            break;
+        case 4:
+            render_choose_quiz();
+            break;
+        case 5:
+            render_confirmation();
+            break;
+        default:
+            redirect(new moodle_url('/local/edulog/index.php'));
+            break;
+    }
 
-    case 2:
-        $courseid = $_SESSION['wizard']['courseid'] ?? null;
-        if (!$courseid) {
-            redirect(new moodle_url('/local/edulog/wizard.php', ['step' => 1]));
-        }
 
-        $excluded_mods = ['assign', 'forum'];
-        $modinfo = get_fast_modinfo($courseid);
-        $materials = [];
+function render_choose_course() {
+    global $USER, $OUTPUT;
+    $courses = enrol_get_users_courses($USER->id);
+    $templatecontext = ['courses' => array_values($courses)];
+    echo $OUTPUT->render_from_template('local_edulog/choosecourse', $templatecontext);
+}
 
-        foreach ($modinfo->cms as $cm) {
-            if (!$cm->uservisible) {
-                continue;
-            }
-        if (in_array($cm->modname, $excluded_mods)) {
+function render_choose_modules() {
+    global $DB, $OUTPUT;
+    $courseid = $_SESSION['wizard']['courseid'] ?? null;
+    if (!$courseid) {
+        redirect(new moodle_url('/local/edulog/wizard.php', ['step' => 1]));
+    }
+
+    $excluded_mods = ['assign', 'forum'];
+    $modinfo = get_fast_modinfo($courseid);
+    $materials = [];
+
+    foreach ($modinfo->cms as $cm) {
+        if (!$cm->uservisible || in_array($cm->modname, $excluded_mods)) {
             continue;
         }
-            $materials[] = [
-                'id' => $cm->id,
-                'name' => $cm->name,
-                'modname' => $cm->modname
-            ];
-        }
-
-        $coursename = $DB->get_field('course', 'fullname', ['id' => $courseid]);
-        $itemsPerPage = 300;
-        $page = optional_param('page', 1, PARAM_INT);
-        $totalMaterials = count($materials);
-        $totalPages = ceil($totalMaterials / $itemsPerPage);
-
-        // Slice only the current page materials
-        $pagedMaterials = array_slice($materials, ($page - 1) * $itemsPerPage, $itemsPerPage);
-
-        $templatecontext = [
-            'materials' => $pagedMaterials,
-            'coursename' => $coursename,
-            'sesskey' => sesskey(),
-            'page' => $page,
-            'hasprev' => $page > 1,
-            'hasnext' => $page < $totalPages,
-            'prevpage' => $page - 1,
-            'nextpage' => $page + 1,
-            'hasmaterials' => count($materials) > 0,
+        $materials[] = [
+            'id' => $cm->id,
+            'name' => $cm->name,
+            'modname' => $cm->modname
         ];
-        echo $OUTPUT->render_from_template('local_edulog/choosemodule', $templatecontext);
-        break;
+    }
 
-    case 3:
-        $courseid = $_SESSION['wizard']['courseid'] ?? null;
-        if (!$courseid) {
-            redirect(new moodle_url('/local/edulog/wizard.php', ['step' => 1]));
-        }
+    $coursename = $DB->get_field('course', 'fullname', ['id' => $courseid]);
+    $itemsPerPage = 300;
+    $page = optional_param('page', 1, PARAM_INT);
+    $totalMaterials = count($materials);
+    $totalPages = ceil($totalMaterials / $itemsPerPage);
 
-        $allowed_mods = ['assign', 'assignment']; // Only show these types
-        $modinfo = get_fast_modinfo($courseid);
-        $assignmentss = [];
+    $pagedMaterials = array_slice($materials, ($page - 1) * $itemsPerPage, $itemsPerPage);
 
-        foreach ($modinfo->cms as $cm) {
-            if (!$cm->uservisible) {
-                continue;
-            }
-            if (strtolower($cm->modname) !== 'assign') {
-                continue;
-            }
-            $assignments[] = [
-                    'instanceid' => $cm->instance, //get assignment id for quiz grade
-                    'id' => $cm->id,  //get assignment id for showing quiz name
-                    'name' => $cm->name,
-                    'modname' => $cm->modname
-                ];
-            }
-
-        $coursename = $DB->get_field('course', 'fullname', ['id' => $courseid]);
-        $itemsPerPage = 300;
-        $page = optional_param('page', 1, PARAM_INT);
-        $totalAssignment = count($assignments);
-        $totalPages = ceil($totalAssignment / $itemsPerPage);
-
-        // Slice only the current page materials
-        $pagedAssignment = array_slice($assignments, ($page - 1) * $itemsPerPage, $itemsPerPage);
-
-        $templatecontext = [
-            'assignment' => $pagedAssignment,
-            'coursename' => $coursename,
-            'sesskey' => sesskey(),
-            'page' => $page,
-            'hasprev' => $page > 1,
-            'hasnext' => $page < $totalPages,
-            'prevpage' => $page - 1,
-            'nextpage' => $page + 1,
-            'hasmaterials' => count($assignments) > 0,
-        ];
-        echo $OUTPUT->render_from_template('local_edulog/chooseassignment', $templatecontext);
-        break;
-
-    case 4:
-        $courseid = $_SESSION['wizard']['courseid'] ?? null;
-        if (!$courseid) {
-            redirect(new moodle_url('/local/edulog/wizard.php', ['step' => 1]));
-        }
-
-        $allowed_mods = ['quiz']; // Only show these types
-        $modinfo = get_fast_modinfo($courseid);
-        $quizs = [];
-
-        foreach ($modinfo->cms as $cm) {
-            if (!$cm->uservisible) {
-                continue;
-            }
-            if (strtolower($cm->modname) !== 'quiz') {
-                continue;
-            }
-                $quizs[] = [
-                    'instanceid' => $cm->instance, //get quiz id for quiz grade
-                    'id' => $cm->id,  //get modules id for showing quiz name
-                    'name' => $cm->name,
-                    'modname' => $cm->modname
-                ];
-            }
-
-        $coursename = $DB->get_field('course', 'fullname', ['id' => $courseid]);
-        $itemsPerPage = 300;
-        $page = optional_param('page', 1, PARAM_INT);
-        $totalquizs = count($quizs);
-        $totalPages = ceil($totalquizs / $itemsPerPage);
-
-        // Slice only the current page materials
-        $pagedquizs = array_slice($quizs, ($page - 1) * $itemsPerPage, $itemsPerPage);
-
-        $templatecontext = [
-            'quizs' => $pagedquizs,
-            'coursename' => $coursename,
-            'sesskey' => sesskey(),
-            'page' => $page,
-            'hasprev' => $page > 1,
-            'hasnext' => $page < $totalPages,
-            'prevpage' => $page - 1,
-            'nextpage' => $page + 1,
-            'hasmaterials' => count($quizs) > 0,
-        ];
-        echo $OUTPUT->render_from_template('local_edulog/choosequiz', $templatecontext);
-        break;
-
-    case 5:
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty(optional_param('cpmkname', '', PARAM_TEXT))) {
-            $_SESSION['wizard']['cpmkname'] = required_param('cpmkname', PARAM_TEXT);
-        }    
-        
-        $summary = $_SESSION['wizard'];
-        $coursename = $DB->get_field('course', 'fullname', ['id' => $summary['courseid']]);
-        $modinfo = get_fast_modinfo($summary['courseid']);
-    
-        $get_modules = function ($items, $default_weight = null) use ($modinfo) {
-            $modules = [];
-        
-            foreach ((array)$items as $item) {
-                $cmid = $item['cmid'] ?? null;
-                
-        
-                if ($cmid && isset($modinfo->cms[$cmid])) {
-                    $cm = $modinfo->cms[$cmid];
-                    $modules[] = [
-                        'id' => $cmid,
-                        'instanceid' => $cm->instance,
-                        'name' => $modinfo->cms[$cmid]->name,
-                        'default_weight' => $default_weight,
-                    ];
-                }
-            }
-        
-            return $modules;
-        };
-
-        $get_names = function ($ids) use ($modinfo) {
-            $names = [];
-            foreach ((array)$ids as $id) {
-                if (isset($modinfo->cms[$id])) {
-                    $names[] = $modinfo->cms[$id]->name;
-                }
-            }
-            return $names;
-        };
-    
-        $templatecontext = [
-            'coursename' => $coursename,
-            'messagetext' => $summary['messagetext'],
-            'sesskey' => sesskey()
-        ];
-    
-        $total_items = 0;
-        if (!empty($summary['assignmentids'])) {
-            $total_items += count($summary['assignmentids']);
-        }
-        if (!empty($summary['quizids'])) {
-            $total_items += count($summary['quizids']);
-        }
-
-
-        // Distribute 100% evenly
-        $even_weight = $total_items > 0 ? floor(100 / $total_items) : 0;
-        $leftover = 100 - ($even_weight * $total_items); // to distribute leftover later if needed
-
-        if (!empty($summary['materialids'])) {
-            $templatecontext['materials'] = ['items' => $get_names($summary['materialids'])];
-        }
-
-        if (!empty($summary['assignmentids'])) {
-            $templatecontext['assignments'] = ['items' => $get_modules($summary['assignmentids'], $even_weight)];
-        }
-
-        if (!empty($summary['quizids'])) {
-            $templatecontext['quizzes'] = ['items' => $get_modules($summary['quizids'], $even_weight)];
-        };
-    
-        echo $OUTPUT->render_from_template('local_edulog/confirm', $templatecontext);
-        break;
-
-    default:
-        redirect(new moodle_url('/local/edulog/index.php'));
-        break;
+    $templatecontext = [
+        'materials' => $pagedMaterials,
+        'coursename' => $coursename,
+        'sesskey' => sesskey(),
+        'page' => $page,
+        'hasprev' => $page > 1,
+        'hasnext' => $page < $totalPages,
+        'prevpage' => $page - 1,
+        'nextpage' => $page + 1,
+        'hasmaterials' => count($materials) > 0,
+    ];
+    echo $OUTPUT->render_from_template('local_edulog/choosemodule', $templatecontext);
 }
+
+function render_choose_assignment() {
+    global $DB, $USER, $OUTPUT;
+    $courseid = $_SESSION['wizard']['courseid'] ?? null;
+    if (!$courseid) {
+        redirect(new moodle_url('/local/edulog/wizard.php', ['step' => 1]));
+    }
+
+    $modinfo = get_fast_modinfo($courseid);
+    $assignments = [];
+
+    foreach ($modinfo->cms as $cm) {
+        if (!$cm->uservisible || strtolower($cm->modname) !== 'assign') {
+            continue;
+        }
+        $assignments[] = [
+            'instanceid' => $cm->instance,
+            'id' => $cm->id,
+            'name' => $cm->name,
+            'modname' => $cm->modname
+        ];
+    }
+
+    $coursename = $DB->get_field('course', 'fullname', ['id' => $courseid]);
+    $itemsPerPage = 300;
+    $page = optional_param('page', 1, PARAM_INT);
+    $totalAssignment = count($assignments);
+    $totalPages = ceil($totalAssignment / $itemsPerPage);
+    $pagedAssignment = array_slice($assignments, ($page - 1) * $itemsPerPage, $itemsPerPage);
+
+    $templatecontext = [
+        'assignment' => $pagedAssignment,
+        'coursename' => $coursename,
+        'sesskey' => sesskey(),
+        'page' => $page,
+        'hasprev' => $page > 1,
+        'hasnext' => $page < $totalPages,
+        'prevpage' => $page - 1,
+        'nextpage' => $page + 1,
+        'hasmaterials' => count($assignments) > 0,
+    ];
+    echo $OUTPUT->render_from_template('local_edulog/chooseassignment', $templatecontext);
+}
+
+function render_choose_quiz() {
+    global $DB, $OUTPUT;
+    $courseid = $_SESSION['wizard']['courseid'] ?? null;
+    if (!$courseid) {
+        redirect(new moodle_url('/local/edulog/wizard.php', ['step' => 1]));
+    }
+
+    $modinfo = get_fast_modinfo($courseid);
+    $quizzes = [];
+
+    foreach ($modinfo->cms as $cm) {
+        if (!$cm->uservisible || strtolower($cm->modname) !== 'quiz') {
+            continue;
+        }
+        $quizzes[] = [
+            'instanceid' => $cm->instance,
+            'id' => $cm->id,
+            'name' => $cm->name,
+            'modname' => $cm->modname
+        ];
+    }
+
+    $coursename = $DB->get_field('course', 'fullname', ['id' => $courseid]);
+    $itemsPerPage = 300;
+    $page = optional_param('page', 1, PARAM_INT);
+    $totalQuizzes = count($quizzes);
+    $totalPages = ceil($totalQuizzes / $itemsPerPage);
+    $pagedQuizzes = array_slice($quizzes, ($page - 1) * $itemsPerPage, $itemsPerPage);
+
+    $templatecontext = [
+        'quizs' => $pagedQuizzes,
+        'coursename' => $coursename,
+        'sesskey' => sesskey(),
+        'page' => $page,
+        'hasprev' => $page > 1,
+        'hasnext' => $page < $totalPages,
+        'prevpage' => $page - 1,
+        'nextpage' => $page + 1,
+        'hasmaterials' => count($quizzes) > 0,
+    ];
+    echo $OUTPUT->render_from_template('local_edulog/choosequiz', $templatecontext);
+}
+
+function render_confirmation() {
+    global $DB, $OUTPUT;
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty(optional_param('cpmkname', '', PARAM_TEXT))) {
+        $_SESSION['wizard']['cpmkname'] = required_param('cpmkname', PARAM_TEXT);
+    }
+
+    $summary = $_SESSION['wizard'];
+    $coursename = $DB->get_field('course', 'fullname', ['id' => $summary['courseid']]);
+    $modinfo = get_fast_modinfo($summary['courseid']);
+
+    $get_modules = function ($items, $default_weight = null) use ($modinfo) {
+        $modules = [];
+        foreach ((array)$items as $item) {
+            $cmid = $item['cmid'] ?? null;
+            if ($cmid && isset($modinfo->cms[$cmid])) {
+                $cm = $modinfo->cms[$cmid];
+                $modules[] = [
+                    'id' => $cmid,
+                    'instanceid' => $cm->instance,
+                    'name' => $modinfo->cms[$cmid]->name,
+                    'default_weight' => $default_weight,
+                ];
+            }
+        }
+        return $modules;
+    };
+
+    $get_names = function ($ids) use ($modinfo) {
+        $names = [];
+        foreach ((array)$ids as $id) {
+            if (isset($modinfo->cms[$id])) {
+                $names[] = $modinfo->cms[$id]->name;
+            }
+        }
+        return $names;
+    };
+
+    $templatecontext = [
+        'coursename' => $coursename,
+        'messagetext' => $summary['messagetext'],
+        'sesskey' => sesskey()
+    ];
+
+    $total_items = 0;
+    if (!empty($summary['assignmentids'])) {
+        $total_items += count($summary['assignmentids']);
+    }
+    if (!empty($summary['quizids'])) {
+        $total_items += count($summary['quizids']);
+    }
+
+    $even_weight = $total_items > 0 ? floor(100 / $total_items) : 0;
+
+    if (!empty($summary['materialids'])) {
+        $templatecontext['materials'] = ['items' => $get_names($summary['materialids'])];
+    }
+
+    if (!empty($summary['assignmentids'])) {
+        $templatecontext['assignments'] = ['items' => $get_modules($summary['assignmentids'], $even_weight)];
+    }
+
+    if (!empty($summary['quizids'])) {
+        $templatecontext['quizzes'] = ['items' => $get_modules($summary['quizids'], $even_weight)];
+    }
+
+    echo $OUTPUT->render_from_template('local_edulog/confirm', $templatecontext);
+}
+
 
 echo $OUTPUT->footer();

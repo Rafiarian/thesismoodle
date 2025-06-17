@@ -15,8 +15,8 @@
 
  defined('MOODLE_INTERNAL') || die();
  
- class utils_sword {
-    public static function get_sword($cpmkid) {
+ class utils_deviation {
+    public static function get_deviation($cpmkid) {
         global $DB;
 
         $sql = "SELECT 

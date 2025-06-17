@@ -1,6 +1,5 @@
 <?php
 
-
 /**
  * Version details.
  *
@@ -21,31 +20,7 @@ $PAGE->set_heading('Edulog Insight');
 
 $userid = $USER->id;
 
-global $DB, $USER;
-
-// Set page and limit
-$page = optional_param('page', 0, PARAM_INT);
-$perpage = 10;
-$offset = $page * $perpage;
-
-// Count total records
-$totalcount = $DB->count_records('local_cpmk', ['userid' => $USER->id]);
-
-// Get paginated records
-$sql = "SELECT a.*, b.fullname
-        FROM {local_cpmk} a
-        JOIN {course} b ON a.courseid = b.id
-        WHERE a.userid = :userid
-        ORDER BY a.timecreated DESC
-        LIMIT $perpage OFFSET $offset";
-
-$params = [
-    'userid' => $USER->id,
-    'limit' => $perpage,
-    'offset' => $offset
-];
-
-$records = $DB->get_records_sql($sql, $params);
+list($records, $totalcount) = fetch_cpmk_records($userid);
 
 // Prepare data for mustache
 $templatecontext = [
@@ -64,10 +39,36 @@ foreach ($records as $record) {
 }
 
 // Render pagination
-$baseurl = new moodle_url('/local/edulog/index.php'); // adjust your plugin path
+$page = optional_param('page', 0, PARAM_INT);
+$perpage = 10;
+$baseurl = new moodle_url('/local/edulog/index.php');
 $templatecontext['pagination'] = $OUTPUT->paging_bar($totalcount, $page, $perpage, $baseurl);
 
 // Render mustache
 echo $OUTPUT->header();
 echo $OUTPUT->render_from_template('local_edulog/index', $templatecontext);
 echo $OUTPUT->footer();
+
+function fetch_cpmk_records($userid) {
+    global $DB;
+    $page = optional_param('page', 0, PARAM_INT);
+    $perpage = 10;
+    $offset = $page * $perpage;
+
+    $totalcount = $DB->count_records('local_cpmk', ['userid' => $userid]);
+
+    $sql = "SELECT a.*, b.fullname
+            FROM {local_cpmk} a
+            JOIN {course} b ON a.courseid = b.id
+            WHERE a.userid = :userid
+            ORDER BY a.timecreated DESC
+            LIMIT $perpage OFFSET $offset";
+
+    $params = [
+        'userid' => $userid
+    ];
+
+    $records = $DB->get_records_sql($sql, $params);
+
+    return [$records, $totalcount];
+}

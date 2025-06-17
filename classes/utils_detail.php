@@ -27,10 +27,14 @@
                         ELSE cm.id
                     END AS modulename,
                     COALESCE(qz.name, res.name, bz.name, uz.name, ass.name, forum.name, page.name, folder.name) AS instance_name,
-                    COUNT(l.id) AS visits
+                    COUNT(DISTINCT l.id) AS visits
                 FROM mdl_local_cpmk c
                 JOIN mdl_local_cpmk_to_modules ctm 
                     ON ctm.cpmkid = c.id
+                JOIN mdl_local_cpmk_to_quiz ctq
+                    ON ctq.cpmkid = c.id
+                JOIN mdl_local_cpmk_to_assign cta
+                    ON cta.cpmkid = c.id
                 JOIN mdl_course_modules cm 
                     ON cm.id = ctm.coursemoduleid
                 JOIN mdl_modules m 
@@ -84,7 +88,7 @@
             'cpmkid' => $cpmkid,
             'userid' => $userid
         ];
-    
+        error_log("SQL QUERY: " . $sql);
         return $DB->get_records_sql($sql, $params);
     }
 
@@ -159,7 +163,7 @@
             'start_date' => $start_date . ' 00:00:00',
             'end_date' => $latest_deadline_date . ' 23:59:59',
         ]);
-    
+    error_log("Total records returned: " . count($access_data));
         // Step 3: Mapping tanggal - jumlah akses
         $access_map = [];
         foreach ($access_data as $data) {
