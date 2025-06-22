@@ -12,7 +12,7 @@ $cpmkid = required_param('id', PARAM_INT);
 $sort = optional_param('sort', 'content', PARAM_ALPHA);
 $should_run_script = optional_param('runcmd', 0, PARAM_INT);
 
-// ==== Modular Methods ====
+// ==== Modular Methods ==== //
 
 function handleContentView($cpmkid) {
     $data['cpmk_data'] = utils::get_course_and_cpmk_name($cpmkid);
@@ -82,32 +82,55 @@ function handleDeviationView($cpmkid, $should_run_script) {
         fclose($fp);
     }
 
-    $structured_output = [];
-    if (file_exists($outputfile)) {
-        $json_raw = file_get_contents($outputfile);
-        $json = json_decode($json_raw, true);
+    $structured_output = [
+    'number_summary' => '',
+    'classified_table' => [],
+    'raw_lines' => [],
+    'error' => null
 
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            $structured_output[] = ['category' => 'Error', 'lines' => ['JSON decode error: ' . json_last_error_msg()]];
-        } elseif (is_array($json)) {
-            foreach ($json as $category => $lines) {
-                if (is_array($lines) && count(array_filter($lines)) > 0) {
-                    $structured_output[] = ['category' => $category, 'lines' => $lines];
+    
+];
+
+if (file_exists($outputfile)) {
+    $json_raw = file_get_contents($outputfile);
+    $json = json_decode($json_raw, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        $structured_output['error'] = 'JSON decode error: ' . json_last_error_msg();
+    } elseif (is_array($json)) {
+        // Ambil 1 kalimat summary
+        if (!empty($json['Number of unusual activities']) && is_array($json['Number of unusual activities'])) {
+            foreach ($json['Number of unusual activities'] as $line) {
+                if (stripos($line, 'There were') !== false) {
+                    $structured_output['number_summary'] = $line;
+                    break;
                 }
             }
-        } else {
-            $structured_output[] = ['category' => 'Error', 'lines' => ['Invalid JSON format received.']];
+        }
+
+        // Ambil tabel classified
+        if (!empty($json['Unusual activity (classified)']) && is_array($json['Unusual activity (classified)'])) {
+            $structured_output['classified_table'] = $json['Unusual activity (classified)'];
+        }
+
+        // Ambil raw log lines
+        if (!empty($json['Frequent occurrence of activity']) && is_array($json['Frequent occurrence of activity'])) {
+            $structured_output['raw_lines'] = $json['Frequent occurrence of activity'];
         }
     } else {
-        $structured_output[] = ['category' => 'Error', 'lines' => ["Output file not found at path: $outputfile"]];
+        $structured_output['error'] = 'Invalid JSON format received.';
     }
+} else {
+    $structured_output['error'] = "Output file not found at path: $outputfile";
+}
 
     return [
-        'cpmkid' => $cpmkid,
-        'cpmk_data' => $cpmk_data,
-        'template' => 'local_edulog/cpmk_result_deviation',
-        'py_output' => $structured_output
+    'cpmkid' => $cpmkid,
+    'cpmk_data' => $cpmk_data,
+    'template' => 'local_edulog/cpmk_result_deviation',
+    'py_output' => $structured_output
     ];
+    
 }
 
 // ==== Dispatcher ====

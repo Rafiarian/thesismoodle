@@ -97,7 +97,7 @@
     
         $sql = "SELECT 
                     u.id AS userid,
-                    CONCAT(u.firstname, ' ', u.lastname) AS username,
+                    CONCAT(u.firstname) AS username,
                     c.id AS cpmkid,
                     c.cpmk_name,
                     d.id AS courseid,

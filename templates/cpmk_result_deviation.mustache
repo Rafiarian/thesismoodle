@@ -88,41 +88,61 @@ a {
 </div>
 
 <h4 class="mt-4 mb-3 fw-semibold border-top pt-3">SWORD Result for CPMK {{cpmk_name_graph}}</h4>
+{{! show summary deviation }}
+{{#py_output.number_summary}}
+<div class="alert alert-info fw-semibold mb-4" role="alert">
+  {{py_output.number_summary}}
+</div>
+{{/py_output.number_summary}}
+
 <form method="post" class="mb-3">
     <input type="hidden" name="sesskey" value="{{sesskey}}">
     <input type="hidden" name="runcmd" value="1">
     <button type="submit" class="btn btn-primary btn-sm">🔁 Run SWORD Analysis</button>
 </form>
-<div class="container mt-4">
-  <pre style="background-color: #f9f9f9; padding: 0,5rem; border: 1px solid #ddd;">
-<div class="accordion">
-  {{#py_output}}
-  <div class="card mb-2 border rounded shadow-sm">
-    <div class="card-header py-1 px-2" id="heading-{{@index}}">
-      <h2 class="mb-0">
-        <button class="btn btn-link text-left w-100" type="button"
-                data-toggle="collapse"
-                data-target="#collapse-{{@index}}"
-                aria-expanded="false"
-                aria-controls="collapse-{{@index}}">
-          {{category}}
-        </button>
-      </h2>
-    </div>
-
-    <div id="collapse-{{@index}}" class="collapse" aria-labelledby="heading-{{@index}}">
-      <div class="card-body py-2 px-3">
-        <pre class="mb-0" style="white-space: pre-wrap; font-size: 0.85rem;">
-{{#lines}}
-{{.}}
-{{/lines}}
-        </pre>
-      </div>
-    </div>
-  </div>
-  {{/py_output}}
+{{! show deviation table }}
+{{#py_output.classified_table.0}}
+<div class="table-responsive mb-5">
+  <h5 class="mb-3">📌 Unusual Activity (Classified)</h5>
+  <table class="table table-bordered table-striped align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Nama</th>
+        <th>Aktivitas</th>
+        <th>Jumlah Terjadi</th>
+        <th>Rata-rata</th>
+        <th>Arti</th>
+        <th>Penyebab</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#py_output.classified_table}}
+      <tr>
+        <td>{{Nama}}</td>
+        <td>{{Aktivitas}}</td>
+        <td>{{Jumlah Terjadi}}</td>
+        <td>{{Rata-rata}}</td>
+        <td>{{Arti}}</td>
+        <td>{{Penyebab}}</td>
+      </tr>
+      {{/py_output.classified_table}}
+    </tbody>
+  </table>
 </div>
+
+{{! show raw data}}
+{{/py_output.classified_table.0}}
+<div class="container mt-4">
+{{#py_output.raw_lines.0}}
+<div class="mb-5">
+  <h5 class="mb-3">🧾 Raw Activity Log</h5>
+  <pre style="white-space: pre-wrap; background-color: #f8f9fa; padding: 1rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem;">
+{{#py_output.raw_lines}}
+{{.}}
+{{/py_output.raw_lines}}
   </pre>
+</div>
+{{/py_output.raw_lines.0}}
 </div>
 <div class="clearfix mb-5"></div>
 

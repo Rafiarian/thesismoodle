@@ -21,7 +21,7 @@
     
         $sql = "SELECT 
                     u.id, 
-                    CONCAT(u.firstname, ' ', u.lastname) AS namee, 
+                    CONCAT(u.firstname) AS namee, 
                     c.cpmk_name, 
                     COUNT(l.id) AS visits,
                     d.fullname AS course_fullname
@@ -66,7 +66,7 @@
 
         $sql = "SELECT 
                     u.id, 
-                    CONCAT(u.firstname, ' ', u.lastname) AS namee, 
+                    CONCAT(u.firstname) AS namee, 
                     c.cpmk_name, 
                     COUNT(l.id) AS visits,
                     d.fullname AS course_fullname
@@ -111,7 +111,7 @@
     
         $sql = "SELECT 
                     u.id,
-                    CONCAT(u.firstname, ' ', u.lastname) AS name,
+                    CONCAT(u.firstname) AS name,
                     c.cpmk_name,
                     d.fullname AS course_fullname,
                     0 AS visits
@@ -144,26 +144,26 @@
     public static function get_access_time_data($cpmkid) {
         global $DB;
     
-        // Step 1: Fetch the latest quiz deadline
-        $quiz_deadline_sql = "SELECT 
-                                  MAX(q.timeclose) AS latest_deadline
-                              FROM {local_cpmk_to_quiz} cq
-                              JOIN {quiz} q ON q.id = cq.quizid
-                              WHERE cq.cpmkid = :cpmkid";
-    
-        $latest_deadline_timestamp = $DB->get_field_sql($quiz_deadline_sql, ['cpmkid' => $cpmkid]);
-    
-        if (!$latest_deadline_timestamp) {
-            // No quiz deadline found, return empty
-            return [
-                'records' => [],
-                'labels' => json_encode([]),   
-                'counts' => json_encode([]),
-            ];
-        }
-    
-        $latest_deadline_date = date('Y-m-d', $latest_deadline_timestamp);
-        $start_date = date('Y-m-d', strtotime('-45 days', $latest_deadline_timestamp));
+            // Step 1: Fetch the latest quiz deadline
+            $quiz_deadline_sql = "SELECT 
+                                    MAX(q.timeclose) AS latest_deadline
+                                FROM {local_cpmk_to_quiz} cq
+                                JOIN {quiz} q ON q.id = cq.quizid
+                                WHERE cq.cpmkid = :cpmkid";
+        
+            $latest_deadline_timestamp = $DB->get_field_sql($quiz_deadline_sql, ['cpmkid' => $cpmkid]);
+        
+            if (!$latest_deadline_timestamp) {
+                // No quiz deadline found, return empty
+                return [
+                    'records' => [],
+                    'labels' => json_encode([]),   
+                    'counts' => json_encode([]),
+                ];
+            }
+        
+            $latest_deadline_date = date('Y-m-d', $latest_deadline_timestamp);
+            $start_date = date('Y-m-d', strtotime('-45 days', $latest_deadline_timestamp));
     
         // Step 2: Fetch access counts between start_date and latest_deadline (only for students)
         $sql = "SELECT 

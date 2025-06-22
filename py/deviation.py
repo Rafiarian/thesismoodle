@@ -48,182 +48,147 @@ def process_excel_file(file_path):
         return None
 
 def clean_data(df):
+    try:
+        drop_names = [
+            "Mahendrawathi Er","Ika Nurkasanah","Andre Parvian Aristio","Admin User","Admin","-",
+            "Akhtar Ibrahim","Athallah Hilman Hilalazka","Web Service",
+            "Fabio Andrea Liui","Ichsan Ramadhan",
+            "Maritza Dara Athifa","M. Khadavi Khalid","Mudjahidin",
+            "Muhammad Sandhika Setiawan","Raid Orlando Azurae","Rafsyah Fachri Isfansyah",
+            "Shakila Putri Damarista ","Veronika Stefani Pangaribuan"
+        ]
+        df = df[~df["User full name"].str.contains('|'.join(drop_names), case=False, na=False)].copy()
 
-    drop_comps = [
-        "Overview report", "Submission comments", "Grader report", "Logs",
-        "User report", "Zoom meeting", "Forum", "Level Up XP", "System"
-    ]
-    df = df[~df["Component"].isin(drop_comps)].copy()
-    return df
+        drop_comps = [
+            "Overview report","Submission comments","Grader report","Logs",
+            "User report","Zoom meeting","Forum","Level Up XP","System"
+        ]
+        df = df[~df["Component"].isin(drop_comps)].copy()
+        return df
+    except Exception as e:
+        print(f"Error cleaning data: {e}")
+        return None
+    
 
 # —————————————————————————————
 # 2) Main Execution Block (converted for CLI & JSON output)
 # —————————————————————————————
 
-def pattern_directly_repeating_activity(eventlog, delta_z=3, print_details=True, print_report=True):
-    total_dev = 0
-    for case in sorted(eventlog['CaseID'].unique()):
-        ev = eventlog[eventlog['CaseID']==case].reset_index(drop=True)
-        for i in range(1, len(ev)):
-            if ev.loc[i,'Event name'] == ev.loc[i-1,'Event name']:
-                total_dev += 1
-    if print_report:
-        print(f"There were {total_dev} directly repeated events over {eventlog['CaseID'].nunique()} cases.")
-
-def pattern_activity_frequency(eventlog, delta_z=3, print_details=True, print_report=True):
+def pattern_activity_frequency(eventlog, delta_z=3, print_details=False, print_report=True):
     cases = sorted(eventlog['CaseID'].unique())
     acts = sorted(eventlog['Event name'].unique())
     total_dev = 0
     for act in acts:
-        freqs = eventlog[eventlog['Event name']==act] \
-                  .groupby('CaseID').size() \
-                  .reindex(cases, fill_value=0)
+        freqs = eventlog[eventlog['Event name']==act].groupby('CaseID').size().reindex(cases, fill_value=0)
         m, s = freqs.mean(), freqs.std(ddof=1)
         if print_details:
             print(f"Activity {act}: Mean={m:.6f}, SD={s:.6f}")
         for case in cases:
             f = int(freqs.loc[case])
-            z = abs((f-m)/s) if s>0 else np.nan
-            if z>delta_z and not (f==1 and m<1):
+            z = abs((f - m) / s) if s > 0 else np.nan
+            if z > delta_z and not (f == 1 and m < 1):
                 print(f"Activity \"{act}\" occured {f} times in {case} (Mean={m:.6f}, SD={s:.6f}, Z={z:.3f})")
                 total_dev += 1
     if print_report:
-        print(f"\nThere were {total_dev} events with an unusual frequency.")
+        print_frequency_report_summary(total_dev)
+    return total_dev
 
-def pattern_resources_per_trace(eventlog, relative_to_n_activities=False,
-                                delta_z=3, print_details=True, print_report=True):
+def print_frequency_report_summary(total_deviations):
+    return f"There were {total_deviations} events with an unusual frequency."
+
+def get_unusual_activity_lines(eventlog, delta_z=3):
     cases = sorted(eventlog['CaseID'].unique())
-    counts = []
-    for case in cases:
-        sub = eventlog[eventlog['CaseID']==case]
-        n = sub['Resource'].nunique()
-        if relative_to_n_activities and len(sub)>0:
-            n = n/len(sub)
-        counts.append(n)
-    m, s = np.mean(counts), np.std(counts, ddof=1)
-    if print_details:
-        print(f"Mean resources = {m:.6f}, SD = {s:.6f}")
-    total_dev = 0
-    for case, n in zip(cases, counts):
-        z = abs((n-m)/s) if s>0 else np.nan
-        if z>delta_z:
-            print(f"Case {case}: nResources={n:.6f} (Z={z:.3f})")
-            total_dev += 1
-    if print_report:
-        print(f"There were {total_dev} deviations from the number of resources"
-              f"{' per activity' if relative_to_n_activities else ''}.")
+    acts = sorted(eventlog['Event name'].unique())
+    results = []
+    for act in acts:
+        freqs = eventlog[eventlog['Event name'] == act].groupby('CaseID').size().reindex(cases, fill_value=0)
+        m, s = freqs.mean(), freqs.std(ddof=1)
+        for case in cases:
+            f = int(freqs.loc[case])
+            z = abs((f - m) / s) if s > 0 else np.nan
+            if z > delta_z and not (f == 1 and m < 1):
+                line = f'Activity "{act}" occured {f} times in {case} (Mean={m:.6f}, SD={s:.6f}, Z={z:.3f})'
+                results.append(line)
+    return results
 
-def pattern_resource_authorization(eventlog, cutoff_rate=0.10,
-                                   print_details=True, print_report=True):
-    if 'Type' not in eventlog.columns:
-        print("No resource type available. Skipping pattern.")
-        return
-    total_dev = 0
-    for _, row in eventlog.dropna(subset=['Type']).iterrows():
-        sub = eventlog[eventlog['Event name']==row['Event name']].dropna(subset=['Type'])
-        p = (sub['Type']==row['Type']).sum() / len(sub)
-        if p < cutoff_rate:
-            print(f"Case {row['CaseID']}: resource type {row['Type']} for {row['Event name']} has p={p:.6f}")
-            total_dev += 1
-    if print_report:
-        print(f"There were {total_dev} unexpected resources with cutoff rate {cutoff_rate*100:.0f}%.")
+def classify_unusual_activities(unusual_lines, templates):
+    classified = []
+    for line in unusual_lines:
+        try:
+            activity_part = line.split(" occured ")[0].replace('Activity "', '').replace('"', '')
+            user_part = line.split(" in ")[1].split(" (Mean")[0]
+            occurred_count = int(line.split(" occured ")[1].split(" times in ")[0])
+            mean_value = float(line.split("Mean=")[1].split(",")[0])
+            arti, penyebab = "-", "-"
+            for keyword, detail in templates.items():
+                if keyword in activity_part:
+                    arti = detail['arti']
+                    penyebab = detail['penyebab']
+                    break
+            classified.append({
+                "Nama": user_part,
+                "Aktivitas": activity_part,
+                "Jumlah Terjadi": occurred_count,
+                "Rata-rata": mean_value,
+                "Arti": arti,
+                "Penyebab": penyebab
+            })
+        except Exception as e:
+            print(f"Line skipped due to parsing error: {line} | {e}")
+    return classified
 
-def pattern_trace_duration(eventlog, delta_z=3, print_details=True, print_report=True):
-    rec = []
-    for case in sorted(eventlog['CaseID'].unique()):
-        sub = eventlog[eventlog['CaseID']==case] \
-              .dropna(subset=['Timestamp']) \
-              .sort_values('Timestamp')
-        if len(sub)>1:
-            dur = (sub['Timestamp'].iloc[-1] - sub['Timestamp'].iloc[0]).total_seconds()/60
-            rec.append(dur)
-    if not rec:
-        if print_report:
-            print("There were 0 cases with an unusual duration.")
-        return
-    m, s = np.mean(rec), np.std(rec, ddof=1)
-    total_dev = sum(1 for d in rec if s>0 and abs((d-m)/s)>delta_z)
-    if print_report:
-        print(f"There were {total_dev} cases with an unusual duration.")
-
-def pattern_activity_delay(eventlog, relative_to_start=True, relative_to_log=False,
-                           delta_z=3, print_details=True, print_report=True):
-    # 1) Build stats per activity
-    stats = {}
-    starts = (
-        eventlog.dropna(subset=['Timestamp'])
-                .sort_values('Timestamp')
-                .groupby('CaseID')['Timestamp']
-                .first()
-    )
-    for act in eventlog['Event name'].unique():
-        diffs = []
-        sub = eventlog[eventlog['Event name']==act]
-        for _, row in sub.iterrows():
-            ts = row['Timestamp']
-            if pd.isna(ts):
-                continue
-            if relative_to_start:
-                diffs.append((ts - starts[row['CaseID']]).total_seconds()/60)
-            elif relative_to_log and pd.notna(row['Logtime']):
-                diffs.append((row['Logtime'] - ts).total_seconds()/60)
-            else:
-                diffs.append((ts - pd.Timestamp(ts.date())).total_seconds()/60)
-        if diffs:
-            stats[act] = (float(np.mean(diffs)), float(np.std(diffs, ddof=1)))
-
-    # 2) Detect anomalies
-    total_dev = 0
-    for _, row in eventlog.iterrows():
-        act = row['Event name']
-        ts  = row['Timestamp']
-        if act not in stats or pd.isna(ts):
-            continue
-        mu, sd = stats[act]
-        if sd <= 0:
-            continue
-        if relative_to_start:
-            diff = (ts - starts[row['CaseID']]).total_seconds()/60
-            label = "since start of trace"
-        elif relative_to_log:
-            diff = ((row['Logtime'] - ts).total_seconds()/60) if pd.notna(row['Logtime']) else 0
-            label = "logging delay"
-        else:
-            diff = (ts - pd.Timestamp(ts.date())).total_seconds()/60
-            label = "time of day"
-        z = abs((diff - mu)/sd)
-        if z > delta_z:
-            if print_details:
-                print(f"---Detected unusual frequencies in {row['CaseID']}---")
-                print(f"Unusual {label} for activity |{act}|")
-                print(f"It occurred {format_duration(diff)}; mean {format_duration(mu)}, SD {format_duration(sd)}")
-            total_dev += 1
-
-    # 3) Summary
-    if print_report:
-        postfix = "" if relative_to_start else " (logging)"
-        print(f"There were {total_dev} events at an unusual time{postfix}.")
-
-def pattern_time_between_activities(eventlog, delta_z=3, print_details=True, print_report=True):
-    rec = []
-    for case, sub in eventlog.dropna(subset=['Timestamp']).groupby('CaseID'):
-        ts = sub.sort_values('Timestamp')['Timestamp']
-        evs = sub.sort_values('Timestamp')['Event name'].tolist()
-        for i in range(len(ts)-1):
-            dur = (ts.iloc[i+1] - ts.iloc[i]).total_seconds()/60
-            if dur > delta_z and print_details:
-                print(f"In case {case}, there was a duration of {format_duration(dur)} between |{evs[i]}| and |{evs[i+1]}|.")
-            if dur > delta_z:
-                rec.append(dur)
-    total_dev = len(rec)
-    if print_report:
-        print(f"There were {total_dev} events with unusual durations.")
+activity_templates = {
+    'mod_quiz: course module viewed': {
+        'arti': 'Mahasiswa aktif dalam mengecek informasi kuis, seperti instruksi atau waktu pelaksanaan',
+        'penyebab': 'Memiliki kepedulian tinggi terhadap informasi teknis pelaksanaan kuis atau ingin memastikan tidak ada informasi yang terlewat'
+    },
+    'mod_quiz: attempt viewed': {
+        'arti': 'Mahasiswa melakukan pergantian halaman kuis lebih banyak, karena terdapat pertanyaan yang belum dijawab atau untuk meneliti jawabannya agar tidak ada kesalahan',
+        'penyebab': 'Adanya keraguan terhadap jawaban atau strategi untuk memastikan semua soal telah dijawab dengan benar'
+    },
+    'mod_quiz: attempt started': {
+        'arti': 'Mahasiswa lebih sering melaksanakan suatu kuis, karena memiliki inisiatif untuk mengasah kompetensi.',
+        'penyebab': 'Proaktif terhadap penilaian dan pengembangan kompetensi'
+    },
+    'mod_quiz: attempt summary viewed': {
+        'arti': 'Mahasiswa lebih sering melihat ringkasan hasil kuis, memastikan tidak ada yang terlewat sebelum dikumpulkan jawabannya.',
+        'penyebab': 'Berhati-hati dan teliti sebelum mengumpulkan kuis'
+    },
+    'mod_quiz: attempt submitted': {
+        'arti': 'Mahasiswa lebih sering mengumpulkan kuis yang dikerjakan, karena bertanggung jawab atas sesi kuis yang telah dimulai.',
+        'penyebab': 'Disiplin dan menyelesaikan evaluasi sesuai waktu'
+    },
+    'mod_quiz: attempt reviewed': {
+        'arti': 'Mahasiswa reflektif dan berusaha mengevaluasi performanya berdasarkan hasil kuis formative yang diberikan',
+        'penyebab': 'Ingin memahami kesalahan dan memperbaiki performa pada quiz summative'
+    },
+    'mod_quiz: question viewed': {
+        'arti': 'Mahasiswa memperhatikan soal secara detail, mungkin berpindah-pindah halaman untuk memahami atau mengecek kembali',
+        'penyebab': 'Menunjukkan kehati-hatian dalam memahami soal atau strategi menjawab dengan memastikan tidak ada pertanyaan yang terlewat atau disalahpahami'
+    },
+    'mod_resource: course module viewed': {
+        'arti': 'Mahasiswa aktif mengakses file materi pembelajaran, menandakan keterlibatan dalam proses belajar mandiri dari sumber utama.',
+        'penyebab': 'Tertarik belajar dari materi PDF, PPT, atau dokumen yang disediakan dosen'
+    },
+    'mod_url: course module viewed': {
+        'arti': 'Mahasiswa aktif mengakses materi pembelajaran berbasis video atau konten multimedia lain yang disediakan dosen, menandakan inisiatif untuk memahami materi dari sumber utama.',
+        'penyebab': 'Tertarik pada format video sebagai sarana pembelajaran'
+    },
+    'mod_book: course module viewed': {
+        'arti': 'Mahasiswa sering melakukan akses pembukaan modul buku dan sering membaca materi secara terstruktur dan sistematis',
+        'penyebab': 'Menyukai pembelajaran berbasis struktur buku'
+    },
+    'core: course module completion updated': {
+        'arti': 'Mahasiswa secara konsisten menandai modul sebagai selesai, yang bisa menunjukkan kedisiplinan atau kepedulian terhadap progres belajarnya. Namun, ini juga bisa terjadi karena terbiasa mencentang tanpa keterkaitan langsung dengan pemahaman materi.',
+        'penyebab': 'Disiplin atau terbiasa melakukan checklist progres pembelajaran'
+    }
+}
 
 # ── 3) Single‐file pipeline ──
 
 if __name__ == "__main__":
 
-
+    
 
     INPUT_FILE = sys.argv[1]
     if not os.path.exists(INPUT_FILE ):
@@ -289,33 +254,25 @@ if __name__ == "__main__":
         else:
             td = 0
         prev_name, prev_min = nm, mn
-
+        
+    total_deviations = pattern_activity_frequency(df_final, delta_z=3, print_details=False, print_report=False)    
+    unusual_activities = get_unusual_activity_lines(df_final, 3)
     # Capture summaries/detections per pattern
     patterns = [
-        ("Frequent occurrence of activity", 
-             lambda: pattern_activity_frequency(df_final, 3, True, True)),
-        ("Occurrence of directly repeating activity",
-             lambda: pattern_directly_repeating_activity(df_final, 3, True, True)),
-        ("Activity executed by unauthorized resource",
-             lambda: pattern_resource_authorization(df_final, 0.10, True, True)),
-        ("Activities executed by number of resources",
-             lambda: pattern_resources_per_trace(df_final, False, 3, True, True)),
-        ("Activities executed by number of resources (per event)",
-             lambda: pattern_resources_per_trace(df_final, True, 3, True, True)),
-        ("Occurrence of activity outside of time period",
-             lambda: pattern_activity_delay(df_final, False, False, 3, True, True)),
-        ("Delay between start of trace and activity is out of bounds",
-             lambda: pattern_activity_delay(df_final, True, False, 3, True, True)),
-        ("Delay between event and logging out of bounds",
-             lambda: pattern_activity_delay(df_final, False, True, 3, True, True)),
-        ("Time between activities out of bounds",
-             lambda: pattern_time_between_activities(df_final, 3, True, True)),
-        ("Duration of trace out of bounds",
-             lambda: pattern_trace_duration(df_final, 3, True, True)),
+        ("Frequent occurrence of activity", lambda: unusual_activities),
+        ("Number of unusual activities", lambda: [print_frequency_report_summary(total_deviations)]),
+        ("Unusual activity (classified)", lambda: classify_unusual_activities(unusual_activities, activity_templates))
     ]
 
     sword_results = {}
-    for title, runner in patterns:
+for title, runner in patterns:
+    result = runner()
+
+    if isinstance(result, list):
+        sword_results[title] = result
+    elif isinstance(result, dict):
+        sword_results[title] = result
+    else:
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             print(f"\nPattern   -{title}-\n")
@@ -329,5 +286,5 @@ if __name__ == "__main__":
         json.dump(sword_results, jf, ensure_ascii=False, indent=2)
 
     print(f"SWORD patterns JSON saved to {json_path}")
-    print("\nAll files processed!")
+    print("All files processed!")
 
